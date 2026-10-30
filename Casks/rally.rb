@@ -20,8 +20,8 @@ cask "rally" do
 
   app "Rally.app"
 
-  postflight_steps do
-    run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/Rally.app"]
+  postflight do
+    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Rally.app"]
   end
 
   # current and legacy names
