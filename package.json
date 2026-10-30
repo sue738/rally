@@ -3,10 +3,7 @@
   "version": "0.0.1",
   "description": "One list of every coding-agent session on your Mac — working, waiting for you, done — and a place to answer them. Claude Code, Codex CLI, Antigravity, Gemini CLI, Cursor.",
   "bin": {
-    "rally": "bin/rally.js",
-    "agentkanban": "bin/rally.js",
-    "ika": "bin/rally.js",
-    "hotaru": "bin/rally.js"
+    "rally": "bin/rally.js"
   },
   "main": "lib/board.js",
   "scripts": {

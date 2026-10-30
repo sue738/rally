@@ -24,14 +24,5 @@ cask "rally" do
     system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Rally.app"]
   end
 
-  # current and legacy names
-  names = [
-    "rally", # rename:keep
-    "hotaru",
-    "ika",
-    "agentkanban",
-  ]
-  zap trash: names.flat_map { |n|
-    ["~/.#{n}", "~/Library/Preferences/dev.sue738.#{n}.plist", "~/Library/WebKit/dev.sue738.#{n}"]
-  }
+  zap trash: ["~/.rally", "~/Library/Preferences/dev.sue738.rally.plist", "~/Library/WebKit/dev.sue738.rally"]
 end

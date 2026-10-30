@@ -433,7 +433,7 @@ console.log('== ptyd under the move: the real host, in a scratch HOME (test/ptyd
 console.log('== names: rally, with agentkanban as another name for the same command ==');
 {
   const pkg = require('../package.json');
-  ok('★ package: `rally` and `agentkanban` are both commands, for the one file that exists', pkg.name === 'rally' && pkg.bin.rally === 'bin/rally.js' && pkg.bin.agentkanban === 'bin/rally.js' && fs.existsSync(path.join(__dirname, '..', pkg.bin.rally)));
+  ok('★ package: `rally` is the one command, for the one file that exists', pkg.name === 'rally' && pkg.bin.rally === 'bin/rally.js' && Object.keys(pkg.bin).length === 1 && fs.existsSync(path.join(__dirname, '..', pkg.bin.rally)));
   const plist = fs.readFileSync(path.join(__dirname, '..', 'app', 'Info.plist'), 'utf8');
   ok('★ app: the bundle is Rally (id dev.sue738.rally, executable Rally), and the package builds the targets it copies (Rally, rally-ptyd)',
     /CFBundleIdentifier<\/key><string>dev\.sue738\.rally</.test(plist) && /CFBundleExecutable<\/key><string>Rally</.test(plist)
