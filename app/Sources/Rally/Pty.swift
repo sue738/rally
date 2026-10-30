@@ -57,25 +57,25 @@ final class PtyHost {
         case "shell":
             return ([shell, "-il"], nil)
         case "attach":
-            guard session.range(of: "^[0-9a-f]{6,12}$", options: .regularExpression) != nil else { return ([], "セッションIDが不正です") }
+            guard session.range(of: "^[0-9a-f]{6,12}$", options: .regularExpression) != nil else { return ([], L("セッションIDが不正です", "Invalid session id")) }
             return ([shell, "-ilc", "exec \(claudeBin) attach \(session)"], nil)
         case "resume":
-            guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return ([], "セッションIDが不正です") }
+            guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return ([], L("セッションIDが不正です", "Invalid session id")) }
             // a mode the Shift+Tab cycle does not reach (auto) must be given at start
             let m = ["auto", "acceptEdits", "plan", "manual"].contains(mode) ? " --permission-mode \(mode)" : ""
             return ([shell, "-ilc", "exec \(claudeBin) --resume \(session)\(m)"], nil)
         case "agy":
-            guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return ([], "セッションIDが不正です") }
+            guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return ([], L("セッションIDが不正です", "Invalid session id")) }
             // "go": continue a headless run that stopped on a permission; the words are fixed
             // so nothing from the page reaches the command line
             let go = mode == "go" ? " -i '許可が必要で止まった操作から続けてください'" : ""
             return ([shell, "-ilc", "exec \(agyBin) --conversation \(session)\(go)"], nil)
         // codex exec cannot be attached to while it runs: only a stopped session resumes
         case "codex":
-            guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return ([], "セッションIDが不正です") }
+            guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return ([], L("セッションIDが不正です", "Invalid session id")) }
             return ([shell, "-ilc", "exec \(codexBin) resume \(session)"], nil)
         default:
-            return ([], "開けない種類です")
+            return ([], L("開けない種類です", "Cannot open this kind"))
         }
     }
 
@@ -303,7 +303,7 @@ final class PtyHost {
         Darwin.close(was)
         inbuf.removeAll()
         log(["ev": "ptyd-lost", "tabs": ids.count])
-        for id in ids { send("window.__kanban.ptyExit(\(Self.js(id)),-1,\(Self.js("端末のホスト (rally-ptyd) との接続が切れました")))") }
+        for id in ids { send("window.__kanban.ptyExit(\(Self.js(id)),-1,\(Self.js(L("端末のホスト (rally-ptyd) との接続が切れました", "Lost the connection to the terminal host (rally-ptyd)"))))") }
         for f in w { f([]) }
     }
 
@@ -331,11 +331,11 @@ final class PtyHost {
         let env = Self.childEnv(extra)
         if connect(), hosted {
             lock.lock(); let exists = known[id] != nil; if !exists { known[id] = 0; metas[id] = meta }; lock.unlock()
-            if exists { return "同じ端末がもう開いています" }
+            if exists { return L("同じ端末がもう開いています", "That terminal is already open") }
             msg(["op": "open", "id": id, "argv": argv, "cwd": cwd, "env": env, "cols": cols, "rows": rows, "meta": meta])
             return nil
         }
-        guard let l = local else { return "端末を作れませんでした" }
+        guard let l = local else { return L("端末を作れませんでした", "Could not create the terminal") }
         let r = l.open(id: id, argv: argv, cwd: cwd, env: env, cols: cols, rows: rows, meta: meta)
         if r.error == nil { log(["ev": "pty-open", "id": id, "pid": Int(r.pid), "cmd": argv.joined(separator: " ")]) }
         return r.error

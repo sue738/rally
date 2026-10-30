@@ -9,14 +9,16 @@
 'use strict';
 
 const Env = require('../lib/env.js');
+const I18n = require('../lib/i18n.js');
+const tr = I18n.t;
 const path = require('path');
 const Paths = require('../lib/paths.js');
 const Board = require('../lib/board.js');
 const Text = require('../lib/text.js');
 const { NAME } = Board;
 
-const JA = /^ja/i.test(Env.get('LANG') || process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG || '');
-const L = (en, ja) => (JA ? ja : en);
+// the language: lib/i18n.js decides it (RALLY_LANG, the locale, else macOS's own)
+const L = (en, ja) => (I18n.LANG === 'ja' ? ja : en);
 const n = (x) => Number(x || 0).toLocaleString('en-US');
 
 const HELP = `${NAME} — one list of every coding-agent session on this machine
@@ -31,13 +33,13 @@ Usage:
   ${NAME} history --as claude --session ID   one session's conversation as JSON (what the detail panel shows)
   ${NAME} wtsetup --cwd DIR [--include a,b | --setup CMD]   what a new worktree would lack (.env …), add to .worktreeinclude, keep a setup command
   ${NAME} perm [--shim | --id ID --answer allow|rule|always|automode|deny|pass|answer [--text T] [--answers JSON]]   permission prompts held for the board (lib/permhook.js), or answer one with the terminal's choices (rule: allow and save --text as a Bash rule; always: allow and save what Claude Code offered; automode: allow and switch the session to auto mode; deny: --text is what to tell Claude; answer: a question, with {"question text":"choice"})
-  ${NAME} takeover --session ID   close another terminal's idle claude of this session (SIGTERM, never SIGKILL) and wait until it is gone (ここで開き直す)
+  ${NAME} takeover --session ID   close another terminal's idle claude of this session (SIGTERM, never SIGKILL) and wait until it is gone (${tr('ここで開き直す')})
   ${NAME} run --as claude|codex --text "…" [--cwd DIR] [--chrome] [--mode plan|acceptEdits]  start an agent headless (--chrome: let it drive Chrome)
-  ${NAME} reply --as claude|codex --session ID --text "…" [--when-free]  continue a session headless (what send does; --when-free: 今の作業後に送る, held while it is at work)
+  ${NAME} reply --as claude|codex --session ID --text "…" [--when-free]  continue a session headless (what send does; --when-free: ${tr('今の作業後に送る')}, held while it is at work)
   ${NAME} queue --as claude --session ID [--text "…" | --cancel [--key K] | --now --key K]  hold a message, take it back, or send one held message now
-  ${NAME} wip                  what is still open in the sessions that were read (the 残作業 view)
+  ${NAME} wip                  what is still open in the sessions that were read (the ${tr('残作業')} view)
   ${NAME} wip --all [--limit N] [--hours H]   read the half-finished ones that were never read (default 10)
-  ${NAME} wip --as claude --session ID   read the tail and cache what is still open (what 棚卸し does)
+  ${NAME} wip --as claude --session ID   read the tail and cache what is still open (what ${tr('棚卸し')} does)
   ${NAME} bgtasks [--stop JSON | --on | --off]   stop background tasks of live sessions (each re-checked first), or turn the automatic stop of stale wait loops on / off
   ${NAME} done --as claude --session ID [--memory]  close a session (--memory: ask it to save what it learned)
 
@@ -302,7 +304,7 @@ async function main() {
     const W = require('../lib/wtsetup.js');
     if (o.include != null) return process.stdout.write(Text.json(W.include(o.dirArg, String(o.include).split(',').filter(Boolean))));
     if (o.setup != null) return process.stdout.write(Text.json(W.setSetup(o.dirArg, o.setup)));
-    return process.stdout.write(Text.json(W.inspect(o.dirArg) || { error: 'git のリポジトリではありません' }));
+    return process.stdout.write(Text.json(W.inspect(o.dirArg) || { error: tr('git のリポジトリではありません') }));
   }
   if (o.command === 'prmerge') {
     // one shot for the app: マージして片付け (--merge) or 片付け for a session's PR
@@ -317,14 +319,14 @@ async function main() {
     if (!o.id) return process.stdout.write(Text.json({ asks: Perm.list() }));
     let answers = null;
     if (o.answers != null) { try { answers = JSON.parse(o.answers); } catch (e) { return process.stdout.write(Text.json({ error: 'bad --answers' })); } }
-    return process.stdout.write(Text.json(Perm.answer(o.id, o.answer, o.answer === 'answer' ? answers : o.text) ? { ok: true } : { error: o.answer === 'answer' ? 'この質問はもう終わっているか、答えが揃っていません' : 'この許可確認はもう終わっています' }));
+    return process.stdout.write(Text.json(Perm.answer(o.id, o.answer, o.answer === 'answer' ? answers : o.text) ? { ok: true } : { error: o.answer === 'answer' ? tr('この質問はもう終わっているか、答えが揃っていません') : tr('この許可確認はもう終わっています') }));
   }
   if (o.command === 'stop') {
     // one shot for the app: stop a background session (the conversation is kept)
     const D = require('../lib/dispatch.js');
     const id = String(o.session || '');
     if (!D.UUID.test(id)) return process.stdout.write(Text.json({ error: 'bad session id' }));
-    return process.stdout.write(Text.json(D.stopBackground(id.slice(0, 8)) ? { ok: true } : { error: '止められませんでした(もう止まっているか、バックグラウンドのセッションではありません)' }));
+    return process.stdout.write(Text.json(D.stopBackground(id.slice(0, 8)) ? { ok: true } : { error: tr('止められませんでした(もう止まっているか、バックグラウンドのセッションではありません)') }));
   }
   if (o.command === 'bgopen') {
     // one shot for the app: a stopped session opened as a background one (lib/bgopen.js), to attach to
@@ -377,19 +379,19 @@ async function main() {
   if (o.command === 'typeterm') {
     // one shot for the app: type a /command into the terminal a session is open in
     const sess = Board.sessionRecord({ agent: o.agentName, id: o.session, hours: o.hours || 24, dirs: o.dirs });
-    if (!sess) return process.stdout.write(Text.json({ ok: false, error: 'セッションが見つかりません' }));
+    if (!sess) return process.stdout.write(Text.json({ ok: false, error: tr('セッションが見つかりません') }));
     return process.stdout.write(Text.json(require('../lib/term.js').typeCommand({ file: sess.file, cwd: o.dirArg || sess.project, text: o.text })));
   }
   if (o.command === 'focusterm') {
     // one shot for the app: bring forward the Ghostty terminal a session runs in
     const sess = Board.sessionRecord({ agent: o.agentName, id: o.session, hours: o.hours || 24, dirs: o.dirs });
-    if (!sess) return process.stdout.write(Text.json({ ok: false, error: 'セッションが見つかりません' }));
+    if (!sess) return process.stdout.write(Text.json({ ok: false, error: tr('セッションが見つかりません') }));
     return process.stdout.write(Text.json(require('../lib/term.js').focus({ file: sess.file, cwd: o.dirArg || sess.project })));
   }
   if (o.command === 'changes') {
     // one shot for the app: every file a session wrote or edited, with git's diff
     const sess = Board.sessionRecord({ agent: o.agentName, id: o.session, hours: o.hours || 24, dirs: o.dirs });
-    if (!sess) return process.stdout.write(Text.json({ files: [], error: 'セッションが見つかりません' }));
+    if (!sess) return process.stdout.write(Text.json({ files: [], error: tr('セッションが見つかりません') }));
     const m = require('../lib/made.js').forSession(sess);
     const paths = [...(m.edited || []), ...(m.files || [])].sort((a, b) => b.t - a.t).map((f) => f.path);
     return process.stdout.write(Text.json({ agent: o.agentName, session: o.session, ...require('../lib/changes.js').of(paths) }));
@@ -539,7 +541,7 @@ async function main() {
             return Dispatch.dispatch({ agent: o.agentName, text: String(o.text || '') + Attach.lines(keep), model: o.model, effort: o.effort, chrome: !!o.chrome, mode: o.mode || undefined, worktree: !!o.worktree, dir: o.dirArg, addDirs: keep.length ? [path.resolve(Attach.dir())] : undefined,
               ...(o.fork ? { session: Dispatch.recordId('claude', o.fork), fork: true, model: undefined } : {}) }); })();
       // a start the CLI refused is not a start (sendTo reads its own reply's log)
-      if (o.command === 'run') { const got = Dispatch.outcome(r.log, o.agentName === 'codex' ? 1200 : 6000, r.pid); if (got && got.refused) r.error = `${o.agentName} が起動しませんでした: ${got.refused}`; if (got && got.conversation) r.conversation = got.conversation; }
+      if (o.command === 'run') { const got = Dispatch.outcome(r.log, o.agentName === 'codex' ? 1200 : 6000, r.pid); if (got && got.refused) r.error = tr('{agent} が起動しませんでした: {why}', { agent: o.agentName, why: got.refused }); if (got && got.conversation) r.conversation = got.conversation; }
       // exit 0: the app passes a JSON answer through only then, and the page needs saved / attach
       if (r.error) return process.stdout.write(Text.json({ error: r.error, ...(r.typeable ? { typeable: true } : {}), ...(r.saved ? { saved: true, attach: String(o.session || '').slice(0, 8) } : {}), ...(r.queued ? { queued: true, why: r.why } : {}), log: r.log }));
       const started = o.command === 'run' ? await nameStartedSession(r, o) : null;

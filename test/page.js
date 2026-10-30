@@ -715,7 +715,7 @@ console.log('== every button is also a command ==');
   } catch (e) { ok(`カード項目 — ${e.message}`, false); }
   try {
     api.copyId({ ...card, id: 'abc-123' });
-    ok('★ コピー: the copy button says so in a notice at the bottom of the window (not the panel line a live terminal hides)', /function flash\(/.test(uiScript()) && /flash\('セッションIDをコピーしました'\)/.test(uiScript()) && /#flash\{position:fixed/.test(require('../lib/page.js').style ? require('../lib/page.js').style() : fs.readFileSync(path.join(__dirname, '../lib/ui/css/50-misc.css'), 'utf8')));
+    ok('★ コピー: the copy button says so in a notice at the bottom of the window (not the panel line a live terminal hides)', /function flash\(/.test(uiScript()) && /flash\((?:t\()?'セッションIDをコピーしました'\)/.test(uiScript()) && /#flash\{position:fixed/.test(require('../lib/page.js').style ? require('../lib/page.js').style() : fs.readFileSync(path.join(__dirname, '../lib/ui/css/50-misc.css'), 'utf8')));
   } catch (e) { ok(`コピー通知 — ${e.message}`, false); }
   try {
     const c3 = { ...card, activeMs: 95 * 60000 };
@@ -755,7 +755,7 @@ console.log('== every button is also a command ==');
   } catch (e) { ok(`terminal unfold — ${e.message}`, false); }
   try {
     ok('★ 今の作業後に送る の書き直し: Enter saves (⇧Enter is a new line), Esc gives up — both shown on the buttons',
-      /e\.key==='Enter'&&!e\.isComposing&&e\.keyCode!==229&&!e\.shiftKey&&!e\.altKey\)\{[^]*?\.hsave'\)\.click\(\)/.test(uiScript()) && /保存 <span class=\\?"kk\\?">⏎/.test(uiScript()));
+      /e\.key==='Enter'&&!e\.isComposing&&e\.keyCode!==229&&!e\.shiftKey&&!e\.altKey\)\{[^]*?\.hsave'\)\.click\(\)/.test(uiScript()) && /保存(?:'\))?(?:\+')? <span class=\\?"kk\\?">⏎/.test(uiScript()));
   } catch (e) { ok(`held edit enter — ${e.message}`, false); }
   try {
     ok('★ ターミナル: leaving a card puts its shell back in the strip without unfolding it, and a pane ending does not unfold a folded strip (the log showed ptyToStrip < panelTermRelease < openDetail)',
@@ -817,7 +817,7 @@ console.log('== every button is also a command ==');
     api.applyState({ cards: [], agents: [], hours: 24, collisions: [], efforts: { claude: 'high', codex: 'low', claudeModels: { 'claude-opus-5-5': 'medium' } } });
     ok('★ 深さ 既定: the depth a session gets when none is picked — the setting for its model, else the general one',
       api.effortDefault('claude', 'claude-opus-5-5[1m]') === 'medium' && api.effortDefault('claude', 'opus') === 'medium' && api.effortDefault('claude', 'claude-sonnet-5-5') === 'high'
-      && api.effortDefault('codex', 'gpt-6-sol') === 'low' && /'深さ 既定'\+\(+effortDefault\(c\.agent/.test(uiScript()));
+      && api.effortDefault('codex', 'gpt-6-sol') === 'low' && /'深さ 既定'\)?\+\(+effortDefault\(c\.agent/.test(uiScript()));
   } catch (e) { ok(`effort default — ${e.message}`, false); }
   try {
     const cx = { ...card, agent: 'codex', id: 'cx-wf', alive: false };
@@ -898,7 +898,7 @@ console.log('== every button is also a command ==');
   } catch (e) { ok(`unit price — ${e.message}`, false); }
   try {
     ok('★ ⌘K: what was said in the sessions is searched too once typing pauses (runawake was only in the conversation, not a title), shown as 会話の中 with the snippet, after exact title matches',
-      /pal\.ct=setTimeout\(\(\)=>palConvo\(cq\),350\)/.test(uiScript()) && /tag:'会話の中',sub:sn/.test(uiScript()) && /if\(typeof pal!=='undefined'&&pal&&j&&pal\.cq===j\.q\)/.test(uiScript()));
+      /pal\.ct=setTimeout\(\(\)=>palConvo\(cq\),350\)/.test(uiScript()) && /tag:(?:t\(')?会話の中'\)?,sub:sn/.test(uiScript()) && /if\(typeof pal!=='undefined'&&pal&&j&&pal\.cq===j\.q\)/.test(uiScript()));
   } catch (e) { ok(`palette convo — ${e.message}`, false); }
   try {
     let top = '';

@@ -94,8 +94,8 @@ extension AppDelegate {
         }
         let s = statusItem ?? NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem = s
-        s.button?.title = "許可 \(items.count)"
-        s.button?.toolTip = "Rally: 許可を待っているセッション"
+        s.button?.title = L("許可 \(items.count)", "Allow \(items.count)")
+        s.button?.toolTip = L("Rally: 許可を待っているセッション", "Rally: sessions waiting for permission")
         let m = NSMenu()
         for (k, t) in items {
             let it = NSMenuItem(title: t, action: #selector(openAsk(_:)), keyEquivalent: "")
@@ -103,7 +103,7 @@ extension AppDelegate {
             m.addItem(it)
         }
         m.addItem(.separator())
-        let b = NSMenuItem(title: "ボードを開く", action: #selector(openBoardFromMenu), keyEquivalent: ""); b.target = self
+        let b = NSMenuItem(title: L("ボードを開く", "Open the board"), action: #selector(openBoardFromMenu), keyEquivalent: ""); b.target = self
         m.addItem(b)
         s.menu = m
     }

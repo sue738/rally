@@ -1,5 +1,7 @@
 /** test.js — zero-dep tests for rally. Run: node test/test.js */
 'use strict';
+// the node side speaks Japanese here, as written (lib/i18n.js): the assertions read its words
+process.env.RALLY_LANG = 'ja';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -88,7 +90,7 @@ function writeFile(p, lines) { fs.mkdirSync(path.dirname(p), { recursive: true }
   }
   ok('reply: the panel offers ↩, 「↩ ここに返信」, the chip and ⇧R; the conversation draws a reply as one .rq line',
     /class="rbtn"/.test(Board.PAGE) && /↩ ここに返信/.test(Board.PAGE) && /replychip/.test(Board.PAGE) && /A==='panel\.reply'&&panelOpen\(\)/.test(Board.PAGE) && /replyLine\(rp\)/.test(Board.PAGE));
-  ok('★ reply: ↑ history keeps only what you wrote (rememberSent(t), the wrapped text goes to dispatch)', /text:wrapped,model/.test(Board.PAGE) && /rememberSent\(t\);\n\s*echoSent\(wrapped,files\)/.test(Board.PAGE));
+  ok('★ reply: ↑ history keeps only what you wrote (rememberSent(t), the wrapped text goes to dispatch)', /text:wrapped,model/.test(Board.PAGE) && /rememberSent\(t(?:xt)?\);\n\s*echoSent\(wrapped,files\)/.test(Board.PAGE));
 }
 
 // the board's own headless passes (~/.rally/…) are not cards; what they start for you is
@@ -433,7 +435,7 @@ console.log('== ptyd under the move: the real host, in a scratch HOME (test/ptyd
 console.log('== names: rally, with agentkanban as another name for the same command ==');
 {
   const pkg = require('../package.json');
-  ok('★ package: `rally` is the one command, for the one file that exists', pkg.name === 'rally' && pkg.bin.rally === 'bin/rally.js' && Object.keys(pkg.bin).length === 1 && fs.existsSync(path.join(__dirname, '..', pkg.bin.rally)));
+  ok('★ package: `rally` is the command (no old names), for the one file that exists', pkg.name === 'rally' && pkg.bin.rally === 'bin/rally.js' && !pkg.bin.agentkanban && !pkg.bin.ika && !pkg.bin.hotaru && fs.existsSync(path.join(__dirname, '..', pkg.bin.rally)));
   const plist = fs.readFileSync(path.join(__dirname, '..', 'app', 'Info.plist'), 'utf8');
   ok('★ app: the bundle is Rally (id dev.sue738.rally, executable Rally), and the package builds the targets it copies (Rally, rally-ptyd)',
     /CFBundleIdentifier<\/key><string>dev\.sue738\.rally</.test(plist) && /CFBundleExecutable<\/key><string>Rally</.test(plist)
@@ -878,7 +880,7 @@ console.log('== lanes from the process and from subagents ==');
     && /#mmeta \.mstat \.lane\.c-stale,[^{]*\{color:var\(--dim\)/.test(Board.PAGE) && /#mmeta \.mstat \.lane\.c-working\{color:var\(--ok\)/.test(Board.PAGE));
   {
     // フォーカス and 看板 are gone: リスト is the only view, and the header's place for the switch is 表示 (what a card shows)
-    ok('★ one view: no switch, no 看板, no v', /const VIEWS=\[\['list','リスト'\]\];/.test(Board.PAGE) && !/id="viewbtn"|data-v="board"|view\.key|viewStep/.test(Board.PAGE) && /<button id="cardshowbtn"/.test(Board.PAGE));
+    ok('★ one view: no switch, no 看板, no v', /const VIEWS=\[\['list',(?:t\(')?リスト'\)?\]\];/.test(Board.PAGE) && !/id="viewbtn"|data-v="board"|view\.key|viewStep/.test(Board.PAGE) && /<button id="cardshowbtn"/.test(Board.PAGE));
     ok('★ no フォーカス left: no view, no tiles, no dock, no v → フォーカス',
       !/フォーカス/.test(Board.PAGE) && !/id="focus"|id="fdock"|\.ftile|#fdock|vfocus|fhosted|renderFocus|detailHost|focusActivate/.test(Board.PAGE));
   }
@@ -1179,7 +1181,7 @@ console.log('== lanes from the process and from subagents ==');
     ok('★ dispatch: "could not check whether … is running" is a copy that will repeat (unchecked)', o && o.copy === '4b8be42d' && o.unchecked === true);
     fs.writeFileSync(lg, '# h\nnote: session 5402f95a is already running in the background, so this started a copy as d5c66be1.\n');
     ok('dispatch: a copy from a race is not "unchecked" (it may go next time)', D.outcome(lg, 50).unchecked === false);
-    ok('★ queue: an unchecked fork stops auto-retry at once; a race fork counts as a failure (no endless loop)', /if \(got\.unchecked\) fail\(i, UNCHECKED, \{ stop: true \}\);\s*else fail\(i, 'Claude がこのセッションを動いているとみなして/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'queue.js'), 'utf8')));
+    ok('★ queue: an unchecked fork stops auto-retry at once; a race fork counts as a failure (no endless loop)', /if \(got\.unchecked\) fail\(i, UNCHECKED, \{ stop: true \}\);\s*else fail\(i, (tr\()?'Claude がこのセッションを動いているとみなして/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'queue.js'), 'utf8')));
   }
   {
     // a long tool run is not a permission prompt: only a hook mark since the call makes it one
@@ -1427,7 +1429,7 @@ console.log('== lanes from the process and from subagents ==');
   const ndir = path.join(tmp, 'claude-now');
   writeFile(path.join(ndir, '-p', 'd0000000-0000-0000-0000-000000000000.jsonl'), [u(t0, 'fix it'), a(t0 + 5000, 'ok'), u(t0 + 400000, 'and this'), a(t0 + 405000, '直しました。')]);
   const out = require('child_process').execFileSync('node', [path.join(__dirname, '..', 'bin', 'rally.js'), 'now', '--hours', '2', '--dir', `claude=${ndir}`, '--agent', 'claude'],
-    { encoding: 'utf8', env: { ...process.env, RALLY_NO_ENRICH: '1', LANG: 'en_US.UTF-8' } });
+    { encoding: 'utf8', env: { ...process.env, RALLY_NO_ENRICH: '1', RALLY_LANG: 'en', LANG: 'en_US.UTF-8' } });
   ok('★ `now` prints the lanes by whose move it is, answered sessions under yours', /Your Turn \(\d+\)/.test(out) && !/DONE/.test(out));
 }
 
@@ -2603,7 +2605,7 @@ console.log('== board server ==');
       ok('a long message cannot be silently cut by the queue', (Board.PAGE.match(/maxlength="4000"/g) || []).length === 2
         && require('../lib/queue.js') && /MAX_TEXT = 4000/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'queue.js'), 'utf8')));
       ok('★ nothing read is not reported as nothing left', /まだ棚卸ししたセッションがありません/.test(Board.PAGE)
-        && /棚卸しした'\+p\.clean\.length\+'件には/.test(Board.PAGE));
+        && /棚卸しした(?:'\+p\.clean\.length\+'|\{n\})件には/.test(Board.PAGE));
       ok('a machine with no agent installed says so', /claude \/ codex が見つかりません/.test(Board.PAGE));
       ok('完了 says what it is about to do, before it is pressed', /id="dodone"[^>]*title="[^"]*何も送りません/.test(Board.PAGE));
       ok('★ cards and 残作業 items are reachable by Tab and open with Enter',
@@ -2744,7 +2746,7 @@ console.log('== board server ==');
           && /o\.appendChild\(b\)/.test(Board.PAGE) && /function termBottom/.test(Board.PAGE);
       })());
       ok('★ 残作業 is shown per card and gathered in one view', /function pendLine/.test(Board.PAGE) && /openPendingAll/.test(Board.PAGE) && /id="pendall"/.test(Board.PAGE));
-      ok('a session no one has read says 未確認, never 残作業なし', /const pSum=!p\?'未確認'/.test(Board.PAGE) && /未棚卸し/.test(Board.PAGE));
+      ok('a session no one has read says 未確認, never 残作業なし', /const pSum=!p\?(?:t\()?'未確認'/.test(Board.PAGE) && /未棚卸し/.test(Board.PAGE));
       ok('★ 残作業 is one button (count, age, 棚卸し on it; open only while you have it open on that session); 待ち / 完了 sit on the title row, kept in every view of the panel',
         /<details class="pendbox"'\+\(pOpen&&pInner\?' open':''\)/.test(Board.PAGE) && /pendOpenKey=pb\.open\?/.test(Board.PAGE) && !/'pendopen'/.test(Board.PAGE)
         && /<button id="pscan" class="mini tflag"/.test(Board.PAGE) && /<button id="dodone" class="mini tlb primary"/.test(Board.PAGE) && !/class="donebox/.test(Board.PAGE));
@@ -3003,7 +3005,7 @@ console.log('== board server ==');
           E.applyCached(cards);
           ok('icon: the card carries it', cards[0].icon === '🧾');
           if (was === undefined) delete process.env.RALLY_BIN_CLAUDE; else process.env.RALLY_BIN_CLAUDE = was;
-          ok('★ icon: drawn ahead of the title, on the card, the lane line and the panel', /function ico\(c\)/.test(Board.PAGE) && /'">'\+ico\(c\)\+esc\(c\.title\|\|short\(c\.project\)\)\+dupTag\(c\)\+'<\/span>'/.test(Board.PAGE) && /<span class="ttl" title="'\+esc\(c\.title\|\|c\.project\|\|''\)\+'">'\+ico\(c\)/.test(Board.PAGE) && /'\+ico\(c\)\+esc\(c\.title\|\|'\(題名なし\)'\)/.test(Board.PAGE));
+          ok('★ icon: drawn ahead of the title, on the card, the lane line and the panel', /function ico\(c\)/.test(Board.PAGE) && /'">'\+ico\(c\)\+esc\(c\.title\|\|short\(c\.project\)\)\+dupTag\(c\)\+'<\/span>'/.test(Board.PAGE) && /<span class="ttl" title="'\+esc\(c\.title\|\|c\.project\|\|''\)\+'">'\+ico\(c\)/.test(Board.PAGE) && /'\+ico\(c\)\+esc\(c\.title\|\|(?:t\()?'\(題名なし\)'\)/.test(Board.PAGE));
           scratchStore('TITLES');
         }
         {
@@ -3037,7 +3039,7 @@ console.log('== board server ==');
       {
         // the files a message carried show on the message in the thread (the paths block becomes thumbnails / chips)
         const P = Board.PAGE, i = P.indexOf('const ATT_HEAD'), j = P.indexOf('document.addEventListener', i);
-        const native = true, esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        const native = true, esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]), t = (s) => s;
         let splitAttach, attachThumbs; eval(P.slice(i, j).replace('function splitAttach', 'splitAttach=function').replace('function attachThumbs', 'attachThumbs=function'));
         const r = splitAttach('これ見て' + require('../lib/attach.js').lines(['/u/.agentkanban/attachments/a.png', '/tmp/b.txt']));
         const h = attachThumbs(r.files);
@@ -3112,9 +3114,9 @@ console.log('== board server ==');
         /function openToDeliver\(c,short\)\{[\s\S]{0,400}?panelPtyReady\(c,false[^\n]*\n\s*if\(c&&c\.alive\)\{openSession/.test(Board.PAGE) && /ptyOpen\('resume'/.test(Board.PAGE)
         && /qa\.onclick=\(\)=>\{[\s\S]{0,700}?openToDeliver\(/.test(Board.PAGE) && /qa\.onclick=\(\)=>\{[\s\S]{0,300}?panelPtyReady\(c,false,\(\)=>panelTypeMsg\(c,held\)/.test(Board.PAGE) && /openToDeliver\(c,r\.attach\)/.test(Board.PAGE) && !/openSession\(r\.attach/.test(Board.PAGE));
       ok('★ typing into a session whose terminal is asking something (a confirmation left over) switches there and says so with a notice that survives the switch (flash), not a toast line the switch itself hides',
-        /if\(ptyAsking\(q\)\)\{panelSwitch\('term'\);requestAnimationFrame\(\(\)=>q\.xt\.focus\(\)\);flash\('ターミナルが確認を待っています/.test(Board.PAGE)
-        && /if\(ptyAsking\(p\)\)\{if\(bg\)show\(p\);else p\.xt\.focus\(\);flash\('ターミナルが確認を待っています/.test(Board.PAGE)
-        && /ptyAsking\(p\)\)\{show\(p\);flash\(name\+' が選択を待っています'\)/.test(Board.PAGE)
+        /if\(ptyAsking\(q\)\)\{panelSwitch\('term'\);requestAnimationFrame\(\(\)=>q\.xt\.focus\(\)\);flash\((?:t\()?'ターミナルが確認を待っています/.test(Board.PAGE)
+        && /if\(ptyAsking\(p\)\)\{if\(bg\)show\(p\);else p\.xt\.focus\(\);flash\((?:t\()?'ターミナルが確認を待っています/.test(Board.PAGE)
+        && /ptyAsking\(p\)\)\{show\(p\);flash\((?:name\+' が選択を待っています'|t\('\{name\} が選択を待っています',\{name\}\))\)/.test(Board.PAGE)
         && !/panelSwitch\('term'\);requestAnimationFrame\(\(\)=>q\.xt\.focus\(\)\);toast\(/.test(Board.PAGE));
       {
         // "every button on the screen can also be pressed from here" (the help sheet says so of ⌘K):

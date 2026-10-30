@@ -1,131 +1,188 @@
 # Rally
 
-**Mac の中のコーディングエージェントのセッションを一覧にして、いま誰の番か・最後に何を言ったかを並べ、そのまま返事もできるアプリです。**
+**Every coding-agent session on your Mac in one list: whose turn it is, what each one last said, and a place to answer it.**
 
-Rally は Claude Code・Codex・Antigravity・Gemini CLI・Cursor が手元に書いている会話の記録を読み、すべてのセッションを4つの列に分けます。**Your Turn**(あなたの番)・**Waiting**(止まったまま)・**Working**(作業中)・**Completed**(完了)の4つです。同じ画面で許可の確認に答え、次の指示を送り、新しいセッションを始め、セッションの本物のターミナルを開けます。macOS のアプリと Node の CLI があり、データは Mac の外に出ません。
+Rally reads the transcripts that Claude Code, Codex, Antigravity, Gemini CLI and Cursor
+already write on your machine and sorts every session into four lanes: **Your Turn**,
+**Waiting**, **Working** and **Completed**. From the same window you answer permission
+prompts, send the next message, start new sessions, and open a session's real terminal.
+It is a macOS app and a Node CLI; nothing leaves the Mac.
 
 <picture>
   <source srcset="docs/board-light.png" media="(prefers-color-scheme: light)">
-  <img src="docs/board-dark.png" alt="Rally: 左に列ごとのセッション、右に選んだセッションのターミナル">
+  <img src="docs/board-dark.png" alt="Rally: sessions grouped by lane on the left, the selected session's terminal on the right">
 </picture>
 
-*スクリーンショットのセッションは架空のものです。*
+*The screenshot shows made-up fixture sessions.*
 
-## インストール
+## Install
 
-**Homebrew**(いちばん簡単です。初回起動のブロックも外してくれます):
+**The app** (macOS 14 or later). Download `Rally-<version>-arm64.dmg` (Apple silicon) or
+`-x86_64.dmg` (Intel) from the [releases](https://github.com/sue738/rally/releases)
+and drag **Rally** to Applications. Node is bundled; nothing else needs installing.
+
+The app is ad-hoc signed but not notarized, so macOS blocks the first open of a download:
+open it once, then **System Settings → Privacy & Security → Open Anyway**. Or clear the
+quarantine yourself: `xattr -dr com.apple.quarantine /Applications/Rally.app`.
+
+**Homebrew** (a personal tap; the cask clears the quarantine for you):
 
 ```bash
 brew install --cask sue738/tap/rally
 ```
 
-**アプリを直接入れる**(macOS 14 以降)。[リリース](https://github.com/sue738/rally/releases)から `Rally-<version>-arm64.dmg`(Apple シリコン)か `-x86_64.dmg`(Intel)をダウンロードし、**Rally** をアプリケーションフォルダに入れます。Node は同梱されているので、ほかに入れるものはありません。
-
-アプリは公証(notarization)を受けていないので、ダウンロードしたものは最初の起動で macOS に止められます。一度開いてから **システム設定 → プライバシーとセキュリティ → このまま開く** を押してください。`xattr -dr com.apple.quarantine /Applications/Rally.app` でも外せます。
-
-**CLI だけ使う**(Node 22.13 以上。同じ画面をブラウザで出します):
+**The CLI only** (Node ≥ 22.13; serves the same page in your browser):
 
 ```bash
-npx github:sue738/rally          # http://127.0.0.1:7331/ を開く
-npx github:sue738/rally now      # 列の中身を文字で出す
-# または
+npx github:sue738/rally          # opens http://127.0.0.1:7331/
+npx github:sue738/rally now      # the lanes as text
+# or
 git clone https://github.com/sue738/rally && cd rally && node bin/rally.js
 ```
 
-ほかのコマンド(`run`・`reply`・`queue`・`perm`・`done` など)は `node bin/rally.js --help` で見られます。
+`node bin/rally.js --help` lists the other commands (`run`, `reply`, `queue`, `perm`, `done`, …).
 
-## 最初の起動
+## First run
 
-Rally を開くと、直近24時間に動いたセッションを読みます。**Completed** を表示しているあいだは直近7日分です(**+** / **−** で範囲を変えられます)。表示は自動で更新されます。**⌥⌘K** でどこからでも窓を出し入れでき、窓を閉じても終了はせずに裏に残ります。ログイン時の自動起動はアプリのメニューにあります。画面は日本語です。
+Open Rally. It reads sessions touched in the last 24 hours, and the last 7 days while
+**Completed** is shown (**+** / **−** widen or narrow that) and refreshes on its own. **⌥⌘K** shows or hides the window from
+anywhere; closing the window parks it instead of quitting. *Start at Login* is in the app
+menu. The UI is in English or Japanese: it follows the system language, and ⚙ → **English / 日本語** switches it.
 
-Claude Code の許可の確認に Rally から答えるには、フックを `~/.claude/settings.json` に自分で書き足してください。Rally はこのファイルを書き換えません。`~/.rally/bin/permhook` はアプリが自分のコピーを指すように保ちます。
+To answer Claude Code permission prompts from Rally, add its hook to
+`~/.claude/settings.json` yourself (Rally never edits that file; the app keeps
+`~/.rally/bin/permhook` pointing at its own copy):
 
 ```json
 "hooks": { "PermissionRequest": [{ "matcher": "*", "hooks": [{ "type": "command",
   "command": "/Users/<you>/.rally/bin/permhook", "timeout": 86400 }] }] }
 ```
 
-Rally を開いていないときは、フックは何もせず、確認はいつもどおりターミナルに出ます。
+When Rally is not open, the hook prints nothing and the prompt stays in the terminal as usual.
 
-ヘッダーに Claude の5時間枠と週の枠の残りを出すには、Claude Code がステータスラインに渡す情報を Rally から見えるようにします。同じファイルに `statusLine` を設定してください。すでにあるステータスラインは後ろにつなげれば、今までどおり表示されます(正確な1行はヘッダーの **Claude の利用枠を出す** ボタンで見られます)。
+To show Claude's 5-hour and weekly allowance in the header, let Rally see what Claude Code
+hands its status line. Set `statusLine` in the same file; an existing status line goes after
+it and keeps printing as before (the header's **Show Claude allowance** button shows the exact line):
 
 ```json
 "statusLine": { "type": "command", "command": "~/.rally/bin/statusline ~/your/statusline" }
 ```
 
-Codex の枠は設定なしで出ます。Codex 自身のセッションの記録に入っているためです。
+Codex's allowance needs nothing: it is in Codex's own session logs.
 
-## 4つの列
+## The lanes
 
-| 列 | 入るもの |
+| lane | what is in it |
 |---|---|
-| **Your Turn** | あなた待ちのもの。許可の確認や質問が上に来て、その下にターンを終えたセッションと、最後にあなたが話して何も返っていないセッション |
-| **Waiting** | 6〜24時間動きがないもの。終わってはいないが、忘れているかもしれない |
-| **Working** | 1分以内に書き込みがあったもの、サブエージェントが動いているもの、`claude agents` が作業中と言っているもの |
-| **Completed** | 完了にしたもの、1日以上動きがないもの、1回きりの実行や機械が始めた実行。ヘッダーで **Completed** を入れたときだけ出る |
+| **Your Turn** | waiting on you: a permission prompt or a question on top, then sessions that finished their turn, or where you spoke last and nothing followed |
+| **Waiting** | quiet for 6–24 hours. Not finished, just possibly forgotten |
+| **Working** | wrote within the last minute, has a subagent still running, or `claude agents` says it is busy |
+| **Completed** | sessions you marked done, anything quiet for over a day, one-shot and machine-started runs. Hidden until you turn on **Completed** in the header |
 
-列は、各セッションとそのサブエージェントの記録の最後の数件から決め、`claude agents --json` が返す実際のプロセスの状態で補正します。Your Turn に入ったカードは macOS の通知を出し、Dock のバッジを増やします。
+The lane comes from each session's last transcript entries and its subagents', corrected
+by the live process state from `claude agents --json`. A card entering Your Turn raises a
+macOS notification and bumps the Dock badge.
 
-ヘッダーの **カード項目** で、カードに出す項目を選べます。プロジェクト・エージェント・モデル・合計トークン(Σ)・API で払った場合の費用・文脈の大きさ・最後のメッセージ・最後に動いてからの時間です。費用は API で払ったときの目安で、請求額ではありません(料金がわからないモデルは `$?`。Codex は出しません)。
+The header's **Card fields** chooses what a card shows: project, agent, model, Σ total
+tokens, the API-equivalent cost, context size, the last message, and time since it last
+moved. The cost is what the session would have cost on the API, as a size to compare, not
+a bill (`$?` when a model has no known rate; none for Codex).
 
-## できること
+## What you can do
 
-- **許可の確認に答える。** 新しい確認は、窓の隅に小さなカードで出ます。フォーカスは奪いません。確認そのものの選択肢(許可 / 今後は聞かない / 拒否)がそのまま並びます。開いているセッションの会話にも同じ確認が出て、⌘Y / ⌘⇧Y で許可・拒否できます。質問(AskUserQuestion)とプランの承認も同じように答えられます。
-- **指示を送る。** パネルの入力欄で Enter を押すと、そのセッションに送ります。止まっているものはその場で再開し、バックグラウンドのものは続きとして渡し、ターミナルで開いているものはそこに打ち込みます。
-  - **今の作業後に送る**: 作業中なら手が空くまで預かり、空くたびに1通ずつ順に送ります。⌥⏎ で1回だけ逆の送り方になります。
-  - 何も選んでいないときの ⌘C で、送ったばかりの指示を取り消せます。
-- **セッションの本物のターミナルを使う。** Claude のカードのパネルでは、バックグラウンドのセッションなら `claude attach` を開きます。動いていないセッションなら **ここで再開** で再開できます。Codex と Antigravity は `codex resume` / `agy --conversation` で開き直します。⌘\ でターミナルと会話を切り替えます。ターミナルはアプリより長生きする小さな常駐プロセス(`rally-ptyd`)で動いているので、Rally を終了・更新しても切り離されるだけです。下の帯にはシェルと分割画面があります(⌘J で表示、⌘T でシェル、⌘D で分割)。
-- **新しいセッションを始める。** **＋ 新規**(⌘N)で、エージェント(claude・codex・antigravity)・フォルダ・モデル・考える深さ・権限モード(plan / 編集を許可 / auto)を選びます。権限の確認をすべて飛ばすモードは出しません。Claude と Codex は新しい git worktree で始められ、×2 / ×3 で同じ依頼を別々の worktree で並べて走らせられます。Claude には Chrome の操作(`--chrome`)も許可できます。ファイルや貼り付けた画像も一緒に渡せます。
-- **サブエージェントを追う。** サブエージェントは親の下に入ります。動いているもの、その下に終わったものが結果として並び、押すとその会話を読めます。
-- **変更を確かめる**(D)。セッションが書いた・編集したファイルを git の差分つきで見られます。
-- **完了にする・残作業を聞く。** **完了にする** で片付け、**残作業** で会話の終わりを `claude -p` に読ませて、まだ残っていることを出します。
-- **キーボード。** ⌘K のパレットで、すべてのセッションとボタンをあいまい検索できます。↑↓ でカードを移り、Enter で開きます。入力欄の `/` でスキルの一覧、`@` でファイル名の補完、`?` でキーの一覧が出ます。キーは `?` の一覧の **設定** から変えられます。
+- **Answer permission prompts.** A new prompt appears as a small card in the corner of
+  the window, without taking focus, with the prompt's own choices (allow / don't ask
+  again / deny). The same prompt shows in the open session's conversation, where ⌘Y /
+  ⌘⇧Y allow or deny it. Questions (AskUserQuestion) and plan approvals work the same way.
+- **Send a message.** Enter in the panel's box sends it to that session: an idle one is
+  resumed in place, a background one is continued, one open in a terminal is typed into.
+  A chip in the send row changes that:
+  - **Send after this work**: the message is held until the
+    session is next idle, one per idle turn, in order. ⌥⏎ flips it for one send.
+  - ⌘C (with nothing selected) takes back what you just sent.
+- **Use the session's real terminal.** A Claude card's panel opens on `claude attach`
+  for a background session, or **Resume here** for one that is not running.
+  Codex and Antigravity sessions reopen with `codex resume` / `agy --conversation`.
+  ⌘\ switches between the terminal and the conversation. Terminals run in a small host
+  (`rally-ptyd`) that outlives the app, so quitting or updating Rally only detaches them.
+  The strip at the bottom holds shells and splits (⌘J shows it, ⌘T opens a shell, ⌘D splits).
+- **Start a new session** with **＋ New** (⌘N): pick an agent (claude, codex,
+  antigravity), a folder, a model, and a permission mode (plan / accept edits / auto;
+  bypass is never offered). Claude and Codex can start in a fresh git worktree, and
+  ×2 / ×3 run the same ask side by side in separate worktrees; Claude can also be
+  allowed to drive Chrome (`--chrome`). Files and pasted images can go with the message.
+- **Follow subagents.** Subagents are nested under their parent: running ones, then the
+  finished ones as its results. Click one to read its conversation.
+- **Review what a session changed** (D): every file it wrote or edited, with git's diff.
+- **Mark sessions done**, and ask a session what is still open
+  (**Leftovers**, a `claude -p` read of the conversation's tail).
+- **Keyboard.** ⌘K opens the palette: every session and every button, fuzzy-searched.
+  ↑↓ move through cards, Enter opens, `/` in the box lists skills, `@` completes file
+  names, `?` shows every key. Keys can be rebound (**Settings** in the `?` list).
 
-## 対応エージェント
+## Supported agents
 
-| エージェント | 一覧 | 会話 | 送信・開始 | 許可に答える | パネルのターミナル |
+| agent | listed | conversation | send / start | answer prompts | panel terminal |
 |---|---|---|---|---|---|
-| Claude Code | ○ | ○ | ○ | ○(上のフック) | `claude attach` / 再開 |
-| Codex CLI | ○ | ○ | ○(`codex exec`) | ×(サンドボックスで画面なしに動くため) | `codex resume` |
-| Antigravity(`agy`) | Rally から始めたもの | ○ | ○(`agy -p`) | ×(拒否された操作はカードに出る) | `agy --conversation` |
-| Gemini CLI | ○ | × | × | × | × |
-| Cursor | ○ | × | × | × | × |
+| Claude Code | yes | yes | yes | yes (hook above) | `claude attach` / resume |
+| Codex CLI | yes | yes | yes (`codex exec`) | no (runs headless in a sandbox mode) | `codex resume` |
+| Antigravity (`agy`) | sessions Rally started | yes | yes (`agy -p`) | no (denied actions are named on the card) | `agy --conversation` |
+| Gemini CLI | yes | no | no | no | no |
+| Cursor | yes | no | no | no | no |
 
-**Working** のカードには、ターンが終わるまでの目安が出ます(`⏱ あと5:55`)。パネルの上にも出ます。依頼の重さは文面や長さや文脈の大きさからはわからないので、これまでのターンにかかった時間から見積もります。このセッション・同じフォルダ・すべてのセッションのターンを使い、新しいものと道具を使った回数が近いものを重く見ます。比べるのは、いまのターンより長く続いたものだけです。目安はターンが進むにつれて変わり、これまでのどれより長くなったときはそう出ます。ばらつきが大きいときは1つの数字ではなく幅で出します(あと約2〜15分)。目安が実際の2倍以内に収まるのは3回に1回ほどです(`node scripts/eta-backtest.js` で過去の記録に当てて確かめられます。`rally eta-report` で実際の記録が見られます)。
+A card in **Working** counts down to when its turn is likely to end (`⏱ 5:55 left`), also at the top of its
+panel. There is no way to know how hard a request is (its wording, length and the context size say nothing), so it is
+estimated from how long earlier turns took: this session's, the folder's and everyone's, newer ones and ones with a similar
+number of tool calls so far counting more, compared only with those that ran longer than this one already has. It changes as the turn goes on, and
+says so when it runs longer than any before; when the usual range is wide it shows the range (about 2–15 min left), not one number.
+It is right to within a factor of two about a third of the time (`node scripts/eta-backtest.js` replays the past to check
+that; `rally eta-report` shows the live log).
 
-読むのは、選んだ時間の範囲内に更新された記録だけです。ヘッダーには、Claude と Codex の5時間枠と週の枠の残りも出ます(その数字が手元にあるとき)。
+Only transcripts modified within the chosen hours are read. The header also shows how
+much of the Claude and Codex 5-hour and weekly allowance is left, when those numbers are
+on disk.
 
-## プライバシー
+## Privacy
 
-- アカウントも、利用状況の送信も、私たちのサーバーもありません。アプリはポートを開かず、更新のたびに `node rally.js state` を1回実行するだけです。CLI がブラウザ向けに立てるサーバーは 127.0.0.1 だけで待ち受け、ほかのホストやサイトをまたぐリクエストは断ります。
-- **読むもの**: エージェントの会話の記録(`~/.claude`・`~/.codex`・Gemini と Cursor の保存先)、`claude agents --json`、Claude Code がステータスラインに渡す利用枠(上の設定をしたとき)。
-- **書くもの**: `~/.rally/` の下の Rally 自身のファイル(残作業・預かった指示・実行ログ・添付・キャッシュ)。エージェントに書き込むのは、あなたが送信・開始・完了したときだけです。
-- カードのタイトルと残作業は、あなた自身の `claude` CLI で作るので、あなたの利用量に入ります(`RALLY_NO_ENRICH=1` でタイトルづけを止められます)。
+- No account, no telemetry, no server of ours. The app listens on no port; it runs
+  `node rally.js state` once per refresh. The CLI's browser server binds to 127.0.0.1
+  and refuses other Hosts and cross-site requests.
+- **Read:** the agents' transcripts (`~/.claude`, `~/.codex`, Gemini's and Cursor's
+  stores), `claude agents --json`, and the rate limits Claude Code hands the status line (when set up above).
+- **Written:** Rally's own files under `~/.rally/` (backlog, queue, run logs,
+  attachments, caches). An agent is only written to when you send, start or finish.
+- Card titles and Leftovers are generated with your own `claude` CLI and count toward your
+  usage (`RALLY_NO_ENRICH=1` turns titles off).
 
-## ソースからビルドする
+## Building from source
 
-Xcode のコマンドラインツールが必要です。
+Requires Xcode's command line tools.
 
 ```bash
-cd app && ./build.sh          # この Mac のアーキテクチャ向けに dist/Rally.app を作る
-./release.sh                  # release/Rally-<version>-{arm64,x86_64}.dmg と SHA256SUMS を作る
+cd app && ./build.sh          # dist/Rally.app for this Mac's architecture
+./release.sh                  # release/Rally-<version>-{arm64,x86_64}.dmg + SHA256SUMS
 ```
 
-`build.sh` は nodejs.org の公式ビルドを同梱します(SHASUMS256.txt と照合します)。`RALLY_BUNDLE_NODE=0` で同梱しません。`Casks/rally.rb` のチェックサムは `SHA256SUMS` から取り、バージョンはどこも `package.json` のものを使います。CLI は依存パッケージがなく、会話の記録を読む部分は `lib/vendor/` に同梱しています。
+`build.sh` bundles the official nodejs.org build (checked against its SHASUMS256.txt);
+`RALLY_BUNDLE_NODE=0` leaves it out. `Casks/rally.rb` takes its checksums from
+`SHA256SUMS`, and the version everywhere is `package.json`'s. The CLI has no
+dependencies; the transcript readers are vendored in `lib/vendor/`.
 
-## テスト
+## Tests
 
 ```bash
-node test/test.js             # CLI・サーバー・列分け・送信・預かりなど
-node test/page.js             # 画面のスクリプトを、ダミーの DOM で動かす
-app/selftest.sh [scenario]    # 本物のアプリを架空のホームで起動して、画面を撮る
-scripts/verify.sh             # 変えたファイルに応じて上を流す: 単体テスト・ビルド・関係するシナリオだけ
+node test/test.js             # CLI, server, lanes, dispatch, queue …
+node test/page.js             # the page's script against a stub DOM
+app/selftest.sh [scenario]    # launches the real app on a fixture home and screenshots it
+scripts/verify.sh             # the above in proportion to what changed: unit tests, a build, only the scenarios the changed files can reach
 ```
 
-`scripts/verify.sh --plan` で、何を流すかとかかる時間が出ます(見た目だけの変更なら数分で、全部流すときの10分はかかりません)。`--full` ですべてのシナリオを流し、`--bg` で裏に回してすぐ戻ります。
+`scripts/verify.sh --plan` says what it would run and how long that takes (a looks-only change is a few
+minutes, not the ten of the full run); `--full` runs every scenario, `--bg` runs detached and returns at once.
 
-セルフテストは専用の `HOME`、架空のセッション(`test/fixtures/selftest-home.js`)、偽の `claude` で動くので、本物のセッションを読んだり送ったりはしません。
+The selftest runs with its own `HOME`, made-up sessions (`test/fixtures/selftest-home.js`)
+and a fake `claude`, so no real session is read or sent to.
 
-## ライセンス
+## License
 
 MIT

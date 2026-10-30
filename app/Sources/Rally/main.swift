@@ -140,6 +140,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         cfg.userContentController.add(self, name: "kanban")
         // tells the page its header is the title bar (css: :root.winchrome), and when full screen takes the lights away (.winfull)
         cfg.userContentController.addUserScript(WKUserScript(source: "document.documentElement.classList.add('winchrome')", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        // the page's language (00-a-i18n.js reads localStorage 'lang'): the one picked in the app, when the page has none yet
+        if let lang = Lang.stored { cfg.userContentController.addUserScript(WKUserScript(source: "try{if(!localStorage.getItem('lang'))localStorage.setItem('lang','\(lang)')}catch(e){}", injectionTime: .atDocumentStart, forMainFrameOnly: true)) }
         // the scenarios start from a board with no panel open (the page opens the top card otherwise)
         if selftesting { cfg.userContentController.addUserScript(WKUserScript(source: "window.__akSelftest=true", injectionTime: .atDocumentStart, forMainFrameOnly: true)) }
         // macOS may count the selftest window occluded; WebKit then runs no requestAnimationFrame and
@@ -195,8 +197,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         if !selftesting {
             registerHotKey(); refreshLoginItem(); UNUserNotificationCenter.current().delegate = self
             // a permission prompt's banner answers it: 許可 / 拒否, as the board's own buttons do
-            let allow = UNNotificationAction(identifier: "ak-allow", title: "許可", options: [])
-            let deny = UNNotificationAction(identifier: "ak-deny", title: "拒否", options: [.destructive])
+            let allow = UNNotificationAction(identifier: "ak-allow", title: L("許可", "Allow"), options: [])
+            let deny = UNNotificationAction(identifier: "ak-deny", title: L("拒否", "Deny"), options: [.destructive])
             UNUserNotificationCenter.current().setNotificationCategories([UNNotificationCategory(identifier: "ak-perm", actions: [allow, deny], intentIdentifiers: [], options: [])])
         }
         loadPage()
@@ -242,10 +244,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         let running = pty.localSessions()
         if selftesting || running.isEmpty { return .terminateNow }
         let a = NSAlert()
-        a.messageText = "このアプリの中で動いている Claude セッションが \(running.count) 本あります"
-        a.informativeText = "終了すると止まります(端末のホストを起動できなかったため、アプリが直接動かしています)。\n\n" + running.prefix(8).map { "・" + $0 }.joined(separator: "\n")
-        a.addButton(withTitle: "続ける")
-        a.addButton(withTitle: "終了する")
+        a.messageText = L("このアプリの中で動いている Claude セッションが \(running.count) 本あります", "\(running.count) Claude sessions are running inside this app")
+        a.informativeText = L("終了すると止まります(端末のホストを起動できなかったため、アプリが直接動かしています)。", "Quitting stops them (the terminal host could not start, so the app runs them itself).") + "\n\n" + running.prefix(8).map { "・" + $0 }.joined(separator: "\n")
+        a.addButton(withTitle: L("続ける", "Keep running"))
+        a.addButton(withTitle: L("終了する", "Quit"))
         return a.runModal() == .alertSecondButtonReturn ? .terminateNow : .terminateCancel
     }
     // Closing the window parks the board; under selftest it quits, so no process is left behind.
@@ -358,7 +360,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         let c = min(max(z, zoomSteps.first!), zoomSteps.last!)
         web.pageZoom = CGFloat(c)
         if !selftesting { UserDefaults.standard.set(c, forKey: "pageZoom") }
-        call("typeof flash==='function'&&flash('画面の大きさ \(Int((c * 100).rounded()))%')")
+        call("typeof flash==='function'&&flash('\(L("画面の大きさ", "Zoom")) \(Int((c * 100).rounded()))%')")
     }
     @objc func zoomIn() { let z = Double(web.pageZoom); setZoom(zoomSteps.first(where: { $0 > z + 0.001 }) ?? zoomSteps.last!) }
     @objc func zoomOut() { let z = Double(web.pageZoom); setZoom(zoomSteps.last(where: { $0 < z - 0.001 }) ?? zoomSteps.first!) }
@@ -529,7 +531,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         let r = Self.runProcess(node, [script] + args, timeout: timeout)
         if r.timedOut {
             logLine(["ev": "node-timeout", "cmd": args.first ?? "", "s": Int(timeout)])
-            return ("\(Int(timeout))秒で応答がないので止めました", -1)
+            return (L("\(Int(timeout))秒で応答がないので止めました", "Stopped: no answer in \(Int(timeout)) seconds"), -1)
         }
         if r.code != 0 { return (Self.failureText(out: r.out, err: r.err, code: r.code), r.code) }
         return (r.out, 0)
@@ -632,7 +634,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             let chunk = fh.availableData
             lock.lock(); if data.count <= MAXOUT { data.append(chunk) }; lock.unlock()
         }
-        do { try p.run() } catch { h.readabilityHandler = nil; return ("(実行できません: \(error.localizedDescription))", -1, cwdOf(pane)) }
+        do { try p.run() } catch { h.readabilityHandler = nil; return (L("(実行できません: \(error.localizedDescription))", "(cannot run: \(error.localizedDescription))"), -1, cwdOf(pane)) }
         var deadline = Date().addingTimeInterval(120)
         var timedOut = false
         let inH = inPipe.fileHandleForWriting
@@ -678,8 +680,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             if !dir.isEmpty { setCwd(pane, dir) }
             text = String(text[..<r.lowerBound])
         }
-        if got.count > MAXOUT { text += "\n…(出力が長いので途中で切りました)" }
-        if timedOut { text += "\n…(120秒で止めました)" }
+        if got.count > MAXOUT { text += L("\n…(出力が長いので途中で切りました)", "\n…(output too long, cut here)") }
+        if timedOut { text += L("\n…(120秒で止めました)", "\n…(stopped after 120 seconds)") }
         return (text, p.terminationStatus, cwdOf(pane))
     }
 
@@ -707,8 +709,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     /// Write one attachment, its name rebuilt from scratch: the page can say anything, and this writes into ~.
     func saveAttachment(name: String, base64: String) -> (String?, String?) {
         let MAXB = 20 * 1024 * 1024
-        guard let data = Data(base64Encoded: base64, options: [.ignoreUnknownCharacters]), !data.isEmpty else { return (nil, "空のファイルです") }
-        if data.count > MAXB { return (nil, "大きすぎます(上限20MB)") }
+        guard let data = Data(base64Encoded: base64, options: [.ignoreUnknownCharacters]), !data.isEmpty else { return (nil, L("空のファイルです", "The file is empty")) }
+        if data.count > MAXB { return (nil, L("大きすぎます(上限20MB)", "Too large (limit 20MB)")) }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let dir = Env.get("ATTACHMENTS") ?? (home + "/.rally/attachments")
         var base = (name as NSString).lastPathComponent
@@ -727,7 +729,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                     return (file, nil)
                 } catch CocoaError.fileWriteFileExists { continue }
             }
-            return (nil, "保存先の名前が尽きました")
+            return (nil, L("保存先の名前が尽きました", "Ran out of names to save under"))
         } catch { return (nil, error.localizedDescription) }
     }
 
@@ -814,6 +816,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             return
         }
         switch type {
+        case "lang":
+            // picked on the page (⚙): kept for the app's own words, and node started from now on speaks it too
+            guard let v = body["lang"] as? String, v == "ja" || v == "en" else { return }
+            if !selftesting { UserDefaults.standard.set(v, forKey: "lang") }
+            Lang.export()
+            worker?.stop()                        // the next state starts a worker with the new RALLY_LANG
         case "state":
             let hours = max(1, min(720, (body["hours"] as? Int) ?? 24))
             requestState(hours: hours, enrich: (body["enrich"] as? Bool) == true, watch: (body["watch"] as? Bool) == true)
@@ -833,7 +841,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 } else {
                     // through JSON, never a hand-built JS string (a quote in stderr was a SyntaxError)
                     let obj: [String: Any] = ["agent": agent, "session": session, "turns": [],
-                                              "error": "履歴を読み取れませんでした: " + String(out.prefix(200))]
+                                              "error": L("履歴を読み取れませんでした: ", "Could not read the history: ") + String(out.prefix(200))]
                     if let d = try? JSONSerialization.data(withJSONObject: obj), let j = String(data: d, encoding: .utf8) {
                         self.call("window.__kanban.history(\(j))")
                     }
@@ -845,7 +853,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 let (out, code) = self.runNode(["changes", "--as", agent, "--session", session])
                 if code == 0, (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil {
                     self.call("window.__kanban.changes(\(out))")
-                } else if let d = try? JSONSerialization.data(withJSONObject: ["agent": agent, "session": session, "files": [], "error": "変更を読めませんでした"]),
+                } else if let d = try? JSONSerialization.data(withJSONObject: ["agent": agent, "session": session, "files": [], "error": L("変更を読めませんでした", "Could not read the changes")]),
                           let j = String(data: d, encoding: .utf8) {
                     self.call("window.__kanban.changes(\(j))")
                 }
@@ -856,7 +864,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 let (out, code) = self.runNode(["view", "--cwd", path])
                 if code == 0, (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil {
                     self.call("window.__kanban.viewed(\(out))")
-                } else if let d = try? JSONSerialization.data(withJSONObject: ["path": path, "error": "開けませんでした"]),
+                } else if let d = try? JSONSerialization.data(withJSONObject: ["path": path, "error": L("開けませんでした", "Could not open it")]),
                           let j = String(data: d, encoding: .utf8) {
                     self.call("window.__kanban.viewed(\(j))")
                 }
@@ -867,7 +875,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 let (out, code) = self.runNode(["files", "--cwd", dir])
                 if code == 0, (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil {
                     self.call("window.__kanban.files(\(out))")
-                } else if let d = try? JSONSerialization.data(withJSONObject: ["dir": dir, "files": [], "error": "一覧を取れませんでした"]),
+                } else if let d = try? JSONSerialization.data(withJSONObject: ["dir": dir, "files": [], "error": L("一覧を取れませんでした", "Could not list them")]),
                           let j = String(data: d, encoding: .utf8) {
                     self.call("window.__kanban.files(\(j))")
                 }
@@ -947,7 +955,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                     self.call("window.__kanban.shellOut(\(j))")
                 } else {
                     obj = [:]
-                    self.call("window.__kanban.shellOut({out:'(出力を渡せませんでした)',code:1,pane:\(pane)})")
+                    self.call("window.__kanban.shellOut({out:'\(L("(出力を渡せませんでした)", "(could not pass the output)"))',code:1,pane:\(pane)})")
                 }
             }
         case "shellstop":
@@ -1001,7 +1009,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             // A stopped session is opened in the background and attached to (lib/bgopen.js), so quitting
             // only detaches. Direct `claude --resume` when Claude will not background it, or a mode is asked.
             if kind == "resume" && (body["direct"] as? Bool) != true && mode.isEmpty {
-                guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return call("window.__kanban.ptyExit(\(PtyHost.js(id)),-1,\(PtyHost.js("セッションIDが不正です")))") }
+                guard session.range(of: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", options: .regularExpression) != nil else { return call("window.__kanban.ptyExit(\(PtyHost.js(id)),-1,\(PtyHost.js(L("セッションIDが不正です", "Invalid session id"))))") }
                 var args = ["bgopen", "--session", session, "--cwd", cwd]
                 if let km = body["keepMode"] as? String, ["auto", "acceptEdits", "plan"].contains(km) { args += ["--mode", km] }
                 ptyStarting.insert(id)
@@ -1022,7 +1030,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                             self.call("window.__kanban.ptyKind(\(PtyHost.js(id)),'resume','',\(PtyHost.js((j["why"] as? String) ?? "")))")
                             start("resume", session, "")
                         } else {
-                            self.call("window.__kanban.ptyExit(\(PtyHost.js(id)),-1,\(PtyHost.js((j["error"] as? String) ?? "開けませんでした")))")
+                            self.call("window.__kanban.ptyExit(\(PtyHost.js(id)),-1,\(PtyHost.js((j["error"] as? String) ?? L("開けませんでした", "Could not open it"))))")
                         }
                     }
                 }
@@ -1210,7 +1218,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 let res = self.saveAttachment(name: name, base64: b64)
                 var obj: [String: Any] = ["token": token]
                 if let p = res.0 { obj["path"] = p; obj["name"] = (p as NSString).lastPathComponent }
-                else { obj["error"] = res.1 ?? "保存できません" }
+                else { obj["error"] = res.1 ?? L("保存できません", "Could not save") }
                 if let d = try? JSONSerialization.data(withJSONObject: obj), let j = String(data: d, encoding: .utf8) {
                     self.call("window.__kanban.attached(\(j))")
                 }
@@ -1282,7 +1290,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             actQueue.async { self.ack("perm", self.runNode(args)) }
         case "stop":
             let session = (body["session"] as? String) ?? ""
-            guard (body["agent"] as? String) == "claude" else { return ack("stop", ("claude のセッションだけです", 1)) }
+            guard (body["agent"] as? String) == "claude" else { return ack("stop", (L("claude のセッションだけです", "Claude sessions only"), 1)) }
             if selftesting { notified.append(["key": "stop", "title": session, "body": ""]); return }
             actQueue.async { self.ack("stop", self.runNode(["stop", "--session", session])) }
         case "startterm":
@@ -1308,7 +1316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         case "jobs":
             filesQueue.async {
                 let (out, code) = self.runNode(["jobs"])
-                self.call("window.__kanban.jobs(\(code == 0 && (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil ? out : "{\"jobs\":[],\"error\":\"読めませんでした\"}"))")
+                self.call("window.__kanban.jobs(\(code == 0 && (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil ? out : "{\"jobs\":[],\"error\":\"\(L("読めませんでした", "Could not read them"))\"}"))")
             }
         case "search":
             let q = String(((body["q"] as? String) ?? "").prefix(200))
@@ -1324,7 +1332,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             actQueue.async { self.ack("typeterm", self.runNode(args)) }
         case "focusterm":
             let agent = (body["agent"] as? String) ?? ""
-            guard agent == "claude" else { return ack("focusterm", ("claude のセッションだけです", 1)) }
+            guard agent == "claude" else { return ack("focusterm", (L("claude のセッションだけです", "Claude sessions only"), 1)) }
             let args = ["focusterm", "--as", agent, "--session", (body["session"] as? String) ?? "", "--cwd", (body["cwd"] as? String) ?? ""]
             if selftesting { notified.append(["key": "focusterm", "title": args.joined(separator: " "), "body": ""]); return }
             actQueue.async { self.ack("focusterm", self.runNode(args)) }
@@ -1470,6 +1478,8 @@ for k in ProcessInfo.processInfo.environment.keys where k == "CLAUDECODE" || k.h
 if ProcessInfo.processInfo.environment["BROWSER"] == "true" { unsetenv("BROWSER") }
 // ~/.agentkanban becomes ~/.rally before anything reads either (DataDir.swift)
 DataDir.migrate()
+// node started from the app speaks the app's language (lib/i18n.js reads RALLY_LANG)
+Lang.export()
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
