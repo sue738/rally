@@ -1,0 +1,36 @@
+{
+  "name": "rally",
+  "version": "0.0.1",
+  "description": "One list of every coding-agent session on your Mac — working, waiting for you, done — and a place to answer them. Claude Code, Codex CLI, Antigravity, Gemini CLI, Cursor.",
+  "bin": {
+    "rally": "bin/rally.js",
+    "agentkanban": "bin/rally.js",
+    "ika": "bin/rally.js",
+    "hotaru": "bin/rally.js"
+  },
+  "main": "lib/board.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "gemini-cli",
+    "cursor",
+    "coding-agent",
+    "board",
+    "sessions",
+    "cli"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "author": "sue738"
+}

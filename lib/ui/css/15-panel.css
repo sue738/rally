@@ -1,0 +1,106 @@
+/* A side panel, not a modal: the lanes stay readable and clickable beside it. */
+.modal{position:fixed;right:0;top:0;bottom:0;width:var(--panelw,var(--panelw0));max-width:100%;display:flex;flex-direction:column;z-index:10;background:var(--card);border-left:1px solid var(--line);box-shadow:-12px 0 36px rgba(0,0,0,.22)}
+.modalcard{background:transparent;border:0;border-radius:0;width:100%;flex:1;min-height:0;display:flex;flex-direction:column}
+body.withpanel main{padding-right:calc(var(--panelw,var(--panelw0)) + 16px)}
+/* termpanel (the app): every panel takes the terminal width, so opening and closing never move the lanes */
+body.pterm-on,body.termpanel{--panelw0:clamp(464px,50vw,960px)}
+/* under the header, not over it */
+@media (min-width:1011px){.modal{top:var(--hdrh,0px)}}
+/* On a wide board the panel's place stays when nothing is open, so the lanes do not jump; below 1011px it goes. */
+#dempty{display:none}
+#dempty{flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;color:var(--dim);font-size:var(--fs-small);line-height:1.7;box-shadow:none}
+#dempty b{color:var(--fg);font-size:var(--fs-title);font-weight:600}
+#dempty .drow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#dempty kbd{font-family:var(--mono);font-size:var(--fs-meta);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+/* the resize handle must be visible and wide enough to grab */
+#mgrip{position:absolute;left:-20px;top:0;bottom:0;width:40px;cursor:col-resize;z-index:11;display:flex;align-items:center;justify-content:center}
+#mgrip::before{content:'';width:4px;height:48px;border-radius:2px;background:var(--line)}
+#mgrip:hover::before,#mgrip.dragging::before{background:var(--info);height:72px;width:6px}
+body.resizing{user-select:none;cursor:col-resize}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:saturate(180%) blur(12px)}
+.mhead .t{font-weight:600;font-size:var(--fs-body)}
+.mhead .x{font-size:16px;line-height:1;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;transition:background .12s ease,color .12s ease}
+.mhead .x:hover{background:var(--hover);color:var(--fg)}
+#mbody{padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;font-size:var(--fs-body);line-height:1.6}
+#mmeta{display:flex;flex-direction:column;gap:5px;flex:none}
+#mmeta{position:relative}
+#mmeta .mstat{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:var(--fs-small)}
+#mmeta .mstat .lane{padding:1px 8px;border-radius:999px;font-weight:600;background:color-mix(in srgb,var(--dim) 16%,transparent)}
+/* the lane colour in the status line, from the theme */
+#mmeta .mstat .lane.c-working{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+#mmeta .mstat .lane.c-needs-you,#mmeta .mstat .lane.c-approval{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+#mmeta .mstat .lane.c-answered{color:var(--info);background:color-mix(in srgb,var(--info) 13%,transparent)}
+#mmeta .mstat .lane.c-stale,#mmeta .mstat .lane.c-done,#mmeta .mstat .lane.c-idle{color:var(--dim);background:color-mix(in srgb,var(--dim) 16%,transparent)}
+#mmeta .mstat .why{color:var(--fg)}
+#mmeta .mstat .mi{display:inline-flex;align-items:center;gap:4px;min-width:0;line-height:inherit}
+#mmeta .mstat .mi .mico{flex:none;width:12px;height:12px;opacity:.75}
+#mmeta .mstat .mproj>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22ch}
+#mmeta .mstat .sdot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--dim)}
+#mmeta .mstat .sdot.c-working{background:var(--ok);animation:blip 2.2s ease-in-out infinite}
+#mmeta .mstat .sdot.c-needs-you,#mmeta .mstat .sdot.c-approval{background:var(--warn)}
+#mmeta .mstat .sdot.c-answered{background:var(--info)}
+#mmeta .mstat .cbar{flex:none;width:26px;height:4px;border-radius:2px;background:color-mix(in srgb,currentColor 18%,transparent);overflow:hidden}
+#mmeta .mstat .cbar>i{display:block;height:100%;background:currentColor;border-radius:2px}
+#mmeta .mstat .ctx{color:var(--dim)}
+#mmeta .mstat .ctx.warn{color:var(--warn);font-weight:600}
+#mmeta .mstat .ctx.bad{color:var(--bad);font-weight:600}
+#mmeta .mbtns .compact{padding:1px 8px;font-size:var(--fs-meta)}
+#mmeta .back{align-self:flex-start;font-size:var(--fs-small)}
+#mmeta .kids{display:block;margin-top:0;font-family:var(--mono)}
+#mmeta .kids[open]>.kid:first-of-type{margin-top:4px}
+#mmeta .kids .kid{margin-top:2px}
+#mmeta .kids .kh{display:flex;gap:8px;align-items:center;font-size:var(--fs-small);cursor:pointer;list-style:none;min-height:26px}
+#mmeta .kids .kh::-webkit-details-marker{display:none}
+#mmeta .kids .kh::before{content:'▸';font-size:15px;line-height:1;color:var(--fg);margin-right:6px}#mmeta .kids[open]>.kh::before{content:'▾'}#mmeta .kids[open]>.kh{margin-bottom:2px}
+#mmeta .kid{all:unset;display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;font-size:var(--fs-small);cursor:pointer}
+#mmeta .kid:hover{background:var(--hover)}
+#mmeta .kid .kt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mmeta .kid:has(.kres){align-items:flex-start}
+#mmeta .kid .kt:has(.kres){white-space:normal}
+#mmeta .kid .kres{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--dim);font-size:var(--fs-small);line-height:1.5;margin-top:2px;font-family:system-ui,-apple-system,sans-serif}
+.card .nk.kdone{color:var(--dim);margin:4px 0 0 4px;cursor:inherit}.card .nk.kdone:hover{background:none}.card .nk.kdone .nb{color:var(--ok)}
+#mmeta .kid .dot{width:7px;height:7px;border-radius:50%;background:color-mix(in srgb,var(--dim) 60%,transparent);flex:none}
+#mmeta .kid.run .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+#mmeta .kid .dim{font-size:var(--fs-meta)}
+#mmeta .kfin .kfh{font-size:var(--fs-small);padding:3px 6px}
+#mmeta .mline{color:var(--dim);font-size:var(--fs-small);line-height:1.5;word-break:break-word}
+#mmeta .mline.cmd{display:flex;align-items:center;gap:8px}
+#mmeta .mline.cmd code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:color-mix(in srgb,var(--fg) 5%,transparent);border-radius:6px;padding:3px 7px;font-size:var(--fs-meta);cursor:pointer}
+/* alive: resumeCell() withholds the command, so no copy affordance */
+#mmeta .mline.cmd code.locked,.card code.locked{cursor:not-allowed;opacity:.6}
+.mrow{display:flex;gap:10px;align-items:baseline}
+.mrow .k{color:var(--dim);min-width:92px;flex:none;font-size:var(--fs-small)}
+.mrow .v{word-break:break-all}
+.mrow .v code{background:color-mix(in srgb,var(--fg) 5%,transparent);border-radius:6px;padding:3px 7px;font-size:var(--fs-meta)}
+.mtimeline{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.mtimeline .ev{border-left:2px solid var(--line);padding:2px 0 2px 8px;font-size:var(--fs-small);word-break:break-all}
+.mtimeline .ev .op{color:var(--info);margin-right:6px}.mtimeline .ev .t{color:var(--dim);margin-right:6px}
+.mnote{color:var(--dim);font-size:var(--fs-meta);font-family:var(--mono);padding-top:2px}
+#mbody .row.msg{flex:none;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;align-items:stretch;gap:7px}
+#mbody .msg textarea{width:100%;min-height:58px;resize:vertical;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;font:inherit;padding:9px 11px;transition:border-color .12s ease,box-shadow .12s ease}
+#mbody .msg textarea:focus{outline:none;border-color:color-mix(in srgb,var(--info) 70%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--info) 18%,transparent)}
+#mbody .msg .foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#mbody .msg .hint{color:var(--dim);font-size:var(--fs-meta);margin-left:auto}
+.atts{display:flex;gap:6px;flex-wrap:wrap}
+.atts .att{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 10px;font-size:var(--fs-meta);color:var(--dim);background:var(--card)}
+.atts .att.bad{color:var(--bad);border-color:var(--bad)}
+.atts .att img{width:22px;height:22px;object-fit:cover;border-radius:4px;margin-left:2px}
+.atts .att button{background:none;border:0;color:var(--dim);cursor:pointer;font:inherit;padding:0 2px}
+.atts .att button:hover{color:var(--fg)}
+body.dropping #detail{outline:2px dashed var(--info);outline-offset:-6px}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chips.dirs{margin-top:6px}
+.chips.dirs button{font-size:var(--fs-meta);color:var(--dim)}
+.chips.dirs button:hover{color:var(--fg)}
+.chips button{background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:999px;font:inherit;font-size:var(--fs-meta);padding:3px 10px;cursor:pointer;transition:background .12s ease,color .12s ease,border-color .12s ease}
+.chips button:hover{background:var(--hover);color:var(--fg)}
+.chips button.on{color:var(--fg);border-color:color-mix(in srgb,var(--fg) 45%,var(--line));background:color-mix(in srgb,var(--fg) 8%,transparent)}
+#mbody .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#mbody .row input{flex:1 1 100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;font:inherit;padding:5px 7px}#mbody .row .run{background:var(--bg);color:var(--ok);border:1px solid var(--line);border-radius:4px;font:inherit;cursor:pointer;padding:4px 10px;margin-left:auto}#mbody .toast{color:var(--dim);font-size:var(--fs-meta)}
+/* a short conversation hugs the compose box, the blank space goes above it — not a void below the last message.
+   margin-top:auto on the first child, not justify-content:flex-end: on a scroller that one makes what overflows the top
+   unreachable (a long conversation could not be scrolled back up, nor to its bottom) */
+.hist>:first-child{margin-top:auto}
+.hist{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding:10px 0 12px;scroll-padding-bottom:12px;margin-top:2px;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+.hist .turn{font-size:var(--fs-body);line-height:1.65;white-space:pre-wrap;word-break:break-word;border-left:2px solid var(--line);padding:2px 0 2px 12px}
+.hist .turn .who{color:var(--dim);margin-right:6px}
+.hist .turn .when{color:var(--dim);font-size:var(--fs-meta)}

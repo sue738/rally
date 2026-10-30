@@ -1,0 +1,22 @@
+@media (max-width:1010px){.modal{width:100%}body.withpanel main{padding-right:8px}#mgrip{display:none}
+/* body.hidedone main is more specific than main: restate the one column here */
+main,body.hidedone main{grid-template-columns:1fr;gap:10px;padding:8px}.col{min-height:0}.col .list:empty{display:none}
+.col .list{max-height:60vh;overflow-y:auto;overscroll-behavior:contain}
+/* thumb-sized targets */
+.mhead .x{width:40px;height:40px;font-size:18px}
+.chips button,button.mini{padding:8px 14px;font-size:var(--fs-small)}
+#mbody .msg .hint{margin-left:0;flex-basis:100%;font-size:var(--fs-small)}
+.atts .att{padding:6px 8px 6px 12px;font-size:var(--fs-small)}
+header{flex-wrap:wrap;gap:6px;padding:8px 10px}
+header .sub,header #meta{display:none}
+header input[type=search]{flex:1;min-width:120px;width:auto}
+header #new{margin-left:auto}.card .run{padding:8px 12px}.card input[type=text],.card select,.card textarea{font-size:16px}
+/* 16px inputs in the panel too, or Safari zooms into them */
+#ntext,#mbody .msg textarea,#mmeta input[type=text],#ndir,.tin,header input{font-size:16px}}
+.card .ctx.warn{color:var(--warn)}.card .ctx.bad{color:var(--bad)}
+.card .kidn{margin-left:6px;font-size:var(--fs-micro);padding:0 6px;border-radius:999px;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.card .kind{font-size:var(--fs-micro);font-weight:600;padding:0 6px;border-radius:999px;margin-right:6px}
+.card .kind.k-block{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.card .kind.k-ans{color:var(--info);background:color-mix(in srgb,var(--info) 12%,transparent)}
+.mnote.queued .qerr{color:var(--bad);font-size:var(--fs-small);margin-top:4px}
+.card .queued.bad{color:var(--bad)}

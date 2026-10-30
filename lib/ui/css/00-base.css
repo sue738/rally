@@ -1,0 +1,27 @@
+:root{--lanew:260px;--youw:420px;--smallw:280px;--panelw0:clamp(464px,calc(100vw - var(--youw) - 2 * var(--smallw) - 72px),1100px);--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--term-bg:#16161e;--bg:#1a1b26;--card:#1f2335;--line:#3b4261;--fg:#c0caf5;--dim:#8991b8;--ok:#9ece6a;--warn:#e0af68;--bad:#f7768e;--info:#7aa2f7;
+  --unread:#bb9af7;--unread-fg:#1a1b26;--hover:#292e42;--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.25);--shadow-hi:0 2px 4px rgba(0,0,0,.45),0 10px 24px rgba(0,0,0,.35);--radius:10px}
+body.light{--term-bg:#d8d9e0;--bg:#e6e7ed;--card:#f5f5f9;--line:#b4b8cc;--fg:#343b58;--dim:#565a6e;--ok:#3f6b1f;--warn:#7a5a1e;--bad:#b3303f;--info:#2e5fd0;
+  --unread:#7c3aed;--unread-fg:#fff;--hover:#d8dae6;--shadow:0 1px 2px rgba(16,22,33,.06),0 4px 12px rgba(16,22,33,.06);--shadow-hi:0 2px 6px rgba(16,22,33,.10),0 12px 28px rgba(16,22,33,.10)}
+/* Type scale: title (a session name as the page), body (reading), small (controls, notes), meta (times, chips, counts), micro (tags). Only glyphs and iOS 16px inputs keep their own. */
+:root{--fs-title:15px;--fs-body:13.5px;--fs-small:12px;--fs-meta:11px;--fs-micro:10.5px}
+*{box-sizing:border-box}
+/* a class that sets display would otherwise win over the hidden attribute */
+[hidden]{display:none!important}
+/* Japanese first in the font stack (a Latin-first stack falls back per kana); tabular numbers so times do not jitter */
+body.preload *,body.preload *::before,body.preload *::after{transition:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs-body)/1.55 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+code,.card code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+header{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(180%) blur(12px);flex-wrap:wrap}
+header h1{font-size:var(--fs-body);margin:0;letter-spacing:.2px}
+header .sub{color:var(--dim);font-size:var(--fs-small)}header .dim{color:var(--dim)}
+header button,header input{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font:inherit;font-size:var(--fs-small);transition:background .12s ease,border-color .12s ease}
+header button{cursor:pointer}header button:hover{background:var(--hover);border-color:color-mix(in srgb,var(--fg) 30%,var(--line))}
+header button:disabled{opacity:.6;cursor:default}
+header input[type=number]{border-radius:8px}
+header input[type=search]{border-radius:999px;-webkit-appearance:none}
+header input[type=search]:focus{outline:none;border-color:color-mix(in srgb,var(--info) 70%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--info) 18%,transparent)}
+header label.dim{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-small)}
+input[type=checkbox]{accent-color:var(--info);margin:0}
+header button.mini.toggle #donen{font-variant-numeric:tabular-nums}
+main{display:grid;grid-template-columns:minmax(240px,var(--youw)) repeat(3,minmax(150px,var(--smallw)));gap:14px;padding:14px 16px 24px;overflow-x:auto}

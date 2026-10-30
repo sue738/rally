@@ -1,0 +1,53 @@
+/* ---- widths: every window width gets a layout of its own ---- */
+/* one header row on a desktop: the limits give way first, then controls that have a key and a palette entry */
+@media (min-width:1011px){
+  header{flex-wrap:nowrap}
+  header>*{flex-shrink:0;white-space:nowrap}
+  header>span[style*="flex:1"]{flex:1 1 0;min-width:0}
+  #limits{flex:0 1 auto;min-width:0;overflow:hidden}
+}
+@media (max-width:1320px){#hours{display:none}}
+@media (max-width:1220px){#subs,#theme{display:none}#q{min-width:100px}}
+@media (max-width:1120px){#jobsbtn,#limits .limg+.limg{display:none}}
+/* a long unbroken path must not widen the lane past the window */
+main{grid-template-columns:minmax(240px,var(--youw)) repeat(3,minmax(150px,var(--smallw)))}
+.col{min-width:0}
+@media (max-width:1010px){
+  main,body.hidedone main{grid-template-columns:minmax(0,1fr)}
+  #hours,#subs,#jobsbtn{display:none}
+}
+/* between phone and desktop: the panel takes the right side, lanes stack on the left */
+@media (min-width:761px) and (max-width:1010px){
+  .modal{width:calc(100% - 320px);top:var(--hdrh,0px)}
+  body.withpanel main{padding-right:calc(100% - 320px + 8px)}
+  body.withpanel #term{right:calc(100% - 320px)}
+}
+@media (min-width:1700px){:root{--youw:480px;--smallw:320px}}
+@media (min-width:2200px){:root{--youw:540px;--smallw:360px}}
+.ico{font-size:1em;line-height:1;margin-right:.3em;display:inline-block;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+
+#tpanes{flex:1;min-height:0;display:flex}
+.tpane{flex:1 1 0;min-width:0;display:flex;flex-direction:column;position:relative}
+.tpane+.tpane{border-left:1px solid var(--line)}
+.tpane .tscroll{flex:1}
+.tpane .tpx{position:absolute;top:4px;right:6px;z-index:1;border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:13px;padding:0 4px;min-width:22px;min-height:22px;opacity:0;transition:opacity .12s}
+.tpane .tpx:focus-visible{opacity:1}
+.tpane:hover .tpx{opacity:1}.tpane .tpx:hover{color:var(--fg)}
+#tpanes.one .tpx{display:none}
+.tpane.act .tline .ps{color:var(--ok)}.tpane:not(.act) .tline .ps{color:var(--dim)}
+#tpanes:not(.one) .tpane.act{box-shadow:inset 0 2px 0 var(--info)}
+#tbody:has(#ptys:not(:empty)) #tpanes .tpane.act{box-shadow:inset 0 2px 0 var(--info)}
+#tpanes.dimact .tpane.act{box-shadow:none!important}
+body.termclosed #tpanes{display:none}
+#termhead .thb{border:1px solid var(--line);background:transparent;color:var(--dim);border-radius:6px;padding:1px 7px;font:inherit;font-size:var(--fs-meta);cursor:pointer}
+#termhead .thb:hover{color:var(--fg)}
+.prbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0 2px;font-size:var(--fs-small)}
+.prbox .prl{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-family:var(--mono)}
+.prbox .pbr{color:var(--warn)}
+.prbox .pwt{font-size:var(--fs-micro);padding:0 6px;border-radius:999px;color:var(--info);background:color-mix(in srgb,var(--info) 12%,transparent)}
+.prbox .pdirty,.prbox .pfail{color:var(--bad)}.prbox .pok{color:var(--ok)}
+.prbox a.prlink{color:var(--info);text-decoration:none}.prbox a.prlink:hover{text-decoration:underline}
+.prbox .prfin.arm{color:var(--bad);border-color:var(--bad)}
+.prbox .prsteps{display:inline-flex;flex-wrap:wrap;gap:4px 8px;font-family:var(--mono)}
+.forks{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin:4px 0;font-size:var(--fs-small)}
+.forks a{color:var(--info);text-decoration:none}.forks a:hover{text-decoration:underline}

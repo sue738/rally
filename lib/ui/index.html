@@ -1,0 +1,32 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>__NAME__ — セッション一覧</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1a1b26">
+<!--STYLE--></head><body class="preload">
+<header><span id="meta" hidden></span>
+<span id="limits" hidden></span>
+<input id="q" type="search" hidden>
+<span style="flex:1"></span>
+<button id="jobsbtn" title="定期実行(launchd)の一覧">定期実行</button><button id="pendall" title="棚卸し済みのセッションに残っていること ({pending.key})">残作業 <span id="pendn">–</span></button>
+<button id="showdone" class="mini toggle" title="完了にしたもの・一度きりの実行・サブエージェント・1日以上放置されたもの。出している間は過去7日分を読みます(絞り込み中は自動で出ます) ({done.toggle})">Completed<span id="donen" class="dim"></span></button>
+<button id="subs" class="mini toggle" title="機械が起動したセッションも表示 ({subs.toggle})">自動実行</button>
+<input id="hours" type="hidden" value="24">
+<span class="chips pviewseg" id="pviewseg" title="カードを開いたときに出すもの(全体の設定) · ターミナルUI: そのセッションの本物の画面 · 会話UI: 読むための履歴 · {viewswap.meta} で切り替え"><button id="pvterm" data-p="term">ターミナルUI<span class="kk pvkk" aria-hidden="true"></span></button><button id="pvtalk" data-p="talk">会話UI<span class="kk pvkk" aria-hidden="true"></span></button></span><span class="cswrap"><button id="cardshowbtn" title="カードに出す項目を選ぶ" aria-haspopup="true" aria-expanded="false">カード項目</button><div id="cardshow" class="cspop" role="group" aria-label="カードに出す項目" hidden></div></span><span class="setw"><button id="setbtn" title="設定(キーバインド・表示など)" aria-haspopup="menu">⚙</button><div class="modemenu setmenu" role="menu" hidden><button data-s="keys"><b>キーバインドの設定</b><span class="dim">ショートカットのキーを変える・外す</span></button><button data-s="cards"><b>カード項目</b><span class="dim">カードに出すもの・並び順</span></button><button data-s="theme"><b>ライト / ダーク</b><span class="dim">画面の明るさを切り替える</span></button><button data-s="help"><b>ショートカット一覧</b><span class="dim">いま使えるキー</span></button></div></span><button id="helpbtn" title="ショートカット一覧 ({help.meta} ・ {help.key})">?</button><button id="theme" title="ライト / ダーク ({theme.key})">◐</button><button id="new" title="新規 ({new.meta})">＋ 新規 <span class="kk">⌘N</span></button></header>
+<div id="notifybar" hidden><span class="nb-t"></span><button id="notifygo" class="mini"></button><button id="notifyx" class="mini" aria-label="閉じる" title="しばらく出しません">×</button></div>
+<main>
+<div id="empty" hidden></div>
+<div id="help" hidden></div>
+<section class="col" data-col="needs-you"><h2 title="次の手があなたにあるもの。許可・質問で止まっているものが上、返答して止まったものがその下">Your Turn <button id="yourorder" class="yorder" type="button"></button><span class="n"></span></h2><div class="list"><div class="card skel"><i></i><i></i><i></i></div><div class="card skel"><i></i><i></i></div><div class="card skel"><i></i><i></i><i></i></div></div></section>
+<section class="col" data-col="stale"><h2 title="6〜24時間動いていないもの・あなたが待ちにしたもの(カードをここへドラッグ)">Waiting <span class="n"></span></h2><div class="list"><div class="card skel"><i></i><i></i><i></i></div><div class="card skel"><i></i><i></i></div><div class="card skel"><i></i><i></i><i></i></div></div></section>
+<section class="col" data-col="working"><h2 title="いま動いているもの">Working <span class="n"></span></h2><div class="list"><div class="card skel"><i></i><i></i><i></i></div><div class="card skel"><i></i><i></i></div><div class="card skel"><i></i><i></i><i></i></div></div></section>
+<section class="col" data-col="done"><h2 title="完了にしたもの・自動実行・1日以上動いていないもの">Completed <span class="n"></span></h2><div class="list"><div class="card skel"><i></i><i></i><i></i></div><div class="card skel"><i></i><i></i></div><div class="card skel"><i></i><i></i><i></i></div></div></section>
+</main>
+<div id="listhint" aria-hidden="true"><b>開くセッションがありません</b><span>⌘N で新しく始められます</span></div>
+<section id="term"><div id="termgrip"></div>
+<div id="termhead"><b>ターミナル</b><span id="termtabs"><button class="ttab on" data-t="cmd" title="1コマンドずつ実行する行 (ak など)">コマンド</button></span><span id="termcwd"></span><span class="sp"></span><button id="termsplit" class="thb" title="左右に分割 (⌘D)">分割</button><button id="termtoggle" class="thb" title="ターミナルを隠す (⌘J)" aria-label="ターミナルを隠す"><kbd>⌘J</kbd></button></div>
+<div id="tbody"><div id="tpanes" class="one"><div class="tpane act" data-pane="0"><button class="tpx" title="この区画を閉じる">×</button><div id="termscroll" class="tscroll"><div id="termout" class="tlog"></div>
+<div id="termline" class="tline"><span id="termps" class="ps-line tps"></span><span class="ps">❯</span><input id="termin" class="tin" type="text" spellcheck="false" autocomplete="off"></div></div></div></div>
+<div id="ptys"></div></div>
+</section>
+<div id="askpops" aria-live="polite"></div><div id="detail" class="modal" hidden><div id="mgrip" title="ドラッグで幅を変更"></div><div class="modalcard"><div class="mhead"><span class="t" id="mtitle"></span><button id="mclose" class="x" aria-label="閉じる">×</button></div><div id="mbody"></div></div></div>
+<div id="dempty" class="modal" aria-label="詳細パネル(何も開いていません)"></div>
+<div id="ppark" hidden></div>
+<!--SCRIPT--></body></html>

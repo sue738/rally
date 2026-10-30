@@ -1,0 +1,7 @@
+node_modules/
+app/.build/
+app/dist/
+app/AppIcon.iconset/
+app/release/
+app/ios/build/
+app/ios/*.xcodeproj/

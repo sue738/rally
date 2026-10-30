@@ -1,0 +1,123 @@
+<title>Rally アイコン案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&family=Fraunces:opsz,wght@9..144,500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: a header, then five proposals as one column of wide rows — the big tile on the left, how it reads in the Dock and menu bar on the right. */
+:root {
+  --bg: #eef2f6;
+  --panel: #ffffff;
+  --fg: #142033;
+  --dim: #5b6b80;
+  --line: #d5dde7;
+  --glow: #1a8cff;
+  --dock: #dfe6ee;
+  --f-display: "Fraunces", "Hiragino Mincho ProN", Georgia, serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0a111c; --panel: #111b2a; --fg: #e4ebf4; --dim: #8797ad; --line: #22324a; --glow: #52c6ff; --dock: #1a2638; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0a111c; --panel: #111b2a; --fg: #e4ebf4; --dim: #8797ad; --line: #22324a; --glow: #52c6ff; --dock: #1a2638; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.7; }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 72px; display: grid; gap: 28px; }
+header { display: grid; gap: 6px; }
+header h1 { font-family: var(--f-display); font-weight: 500; font-size: clamp(30px, 5vw, 44px); line-height: 1.15; margin: 0; text-wrap: balance; }
+header h1 em { font-style: normal; color: var(--glow); }
+header p { margin: 0; color: var(--dim); max-width: 62ch; }
+.row { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: center; }
+.row.pick { border-color: var(--glow); }
+.big svg { width: 100%; max-width: 220px; height: auto; display: block; }
+.meta { display: grid; gap: 10px; min-width: 0; }
+.meta h2 { margin: 0; font-size: 19px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.meta h2 .en { font-family: var(--f-mono); font-size: 12px; color: var(--dim); font-weight: 400; letter-spacing: .04em; }
+.tag { font-size: 11px; letter-spacing: .08em; color: var(--glow); border: 1px solid var(--glow); border-radius: 999px; padding: 1px 8px; }
+.meta p { margin: 0; max-width: 60ch; }
+.sizes { display: flex; gap: 18px; align-items: flex-end; background: var(--dock); border-radius: 12px; padding: 12px 16px; width: fit-content; max-width: 100%; flex-wrap: wrap; }
+.sizes figure { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.sizes figcaption { font-family: var(--f-mono); font-size: 10.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.note { color: var(--dim); font-size: 13px; }
+@media (max-width: 620px) { .row { grid-template-columns: 1fr; } .big svg { max-width: 180px; } }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Rally の<em>光る点</em>を、どう描くか</h1>
+  <p>ホタルイカは腕の先の発光器で青く光ります。ボードは「あなたの番」のセッションを光らせて呼ぶので、どの案も光る青い点をひとつ主役にしています。右側は Dock・Finder・メニューバーの大きさでの見え方です。</p>
+</header>
+<div id="list"></div>
+<p class="note">どれもコード(SVG)で描いているので、選んだ案は今の <code>make-icon.swift</code> と同じく描画コードとして組み込めます。色と形の微調整はこの後で。</p>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10243f"/><stop offset="1" stop-color="#050c18"/></linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3eaf2"/></linearGradient>
+    <radialGradient id="halo"><stop offset="0" stop-color="#7fdcff" stop-opacity=".95"/><stop offset=".35" stop-color="#2aa8ff" stop-opacity=".45"/><stop offset="1" stop-color="#2aa8ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="haloInk"><stop offset="0" stop-color="#1a7cff" stop-opacity=".55"/><stop offset="1" stop-color="#1a7cff" stop-opacity="0"/></radialGradient>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+    <clipPath id="tile"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
+  </defs>
+</svg>
+
+<script>
+// Each icon is the inner art of a 1024 canvas; the tile is the macOS grid (824 at 100,100, r 185).
+const DOT = (x, y, r, halo = 'halo', hr = r * 5) =>
+  `<circle cx="${x}" cy="${y}" r="${hr}" fill="url(#${halo})"/><circle cx="${x}" cy="${y}" r="${r}" fill="#dff6ff"/>`;
+const DIM = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#2a4a73"/>`;
+const tile = (fill, art) =>
+  `<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#tile)"><rect x="100" y="100" width="824" height="824" fill="${fill}"/>${art}</g></svg>`;
+
+const icons = [
+  {
+    id: 'list', ja: '灯る行', en: 'lit row', pick: true,
+    why: 'リストだけのボードそのもの。3本の行のうち、先頭の行の点だけが光っていて、「次はこれ」と読めます。小さくしても行と光の点が潰れにくく、機能がいちばん直接伝わります。',
+    art: tile('url(#sea)', [0, 1, 2].map((i) => {
+      const y = 340 + i * 170;
+      const bar = `<rect x="330" y="${y - 34}" width="${i ? 420 : 460}" height="68" rx="34" fill="${i ? '#1b3354' : '#23456f'}"/>`;
+      return bar + (i ? DIM(250, y, 34) : DOT(250, y, 40, 'halo', 190));
+    }).join('')),
+  },
+  {
+    id: 'one', ja: '一点', en: 'one light',
+    why: '暗い海に光がひとつだけ。いちばん静かで、ロゴとしても使いやすい形です。ただ、見ただけでは何のアプリかは伝わりません。',
+    art: tile('url(#sea)', DIM(360, 640, 22) + DIM(650, 720, 16) + DOT(560, 440, 70, 'halo', 330)),
+  },
+  {
+    id: 'squid', ja: 'ホタルイカ', en: 'firefly squid',
+    why: '外套膜とひれを持つイカの輪郭で、腕の先の発光器が3つ光ります。名前との結びつきは一番強い一方、Dock の大きさでは輪郭が細かく、描き込みの調整が必要です。',
+    art: tile('url(#sea)',
+      `<path d="M512 170 C 600 260 628 380 620 520 L 404 520 C 396 380 424 260 512 170 Z" fill="#23456f"/>` +
+      `<path d="M470 250 L 330 330 L 452 380 Z M554 250 L 694 330 L 572 380 Z" fill="#1b3354"/>` +
+      `<rect x="404" y="512" width="216" height="70" rx="20" fill="#1b3354"/>` +
+      [-3, -1.8, -0.6, 0.6, 1.8, 3].map((k) => `<path d="M${512 + k * 26} 575 Q ${512 + k * 44} 700 ${512 + k * 70} 800" stroke="#23456f" stroke-width="26" stroke-linecap="round" fill="none"/>`).join('') +
+      DOT(512 - 3 * 70, 800, 26, 'halo', 120) + DOT(512, 810, 26, 'halo', 120) + DOT(512 + 3 * 70, 800, 26, 'halo', 120) +
+      DIM(470, 440, 12) + DIM(554, 440, 12) + DIM(512, 360, 12)),
+  },
+  {
+    id: 'bay', ja: '富山湾', en: 'toyama bay',
+    why: '水平線の上に青い光が並び、水面に映っています。春の富山湾で浜が青く光る「ホタルイカの身投げ」の景色です。情緒はありますが、アプリの機能とは結びつきません。',
+    art: tile('url(#sea)',
+      `<rect x="100" y="600" width="824" height="324" fill="#04101f"/>` +
+      `<rect x="100" y="598" width="824" height="4" fill="#2a4a73"/>` +
+      [[300, 540, 18], [420, 500, 26], [560, 550, 20], [690, 470, 30], [790, 540, 16]].map(([x, y, r]) =>
+        DOT(x, y, r, 'halo', r * 5) + `<rect x="${x - r * .6}" y="${1200 - y - 20}" width="${r * 1.2}" height="${(620 - y) * 1.1}" rx="${r * .6}" fill="#1a6fc0" opacity=".35"/>`).join('')),
+  },
+  {
+    id: 'paper', ja: '白地に一点', en: 'paper',
+    why: '「一点」を明るい地で描いた案です。Dock に並ぶ暗いアイコンの中では目立ちますが、白地では光る感じが弱まり、ただの青い点に見えます。',
+    art: tile('url(#paper)', `<circle cx="512" cy="512" r="300" fill="url(#haloInk)"/><circle cx="512" cy="512" r="96" fill="#1a6dff"/><circle cx="480" cy="480" r="26" fill="#bfe0ff"/>`),
+  },
+];
+
+document.getElementById('list').outerHTML = icons.map((ic) => `
+  <section class="row${ic.pick ? ' pick' : ''}" aria-labelledby="h-${ic.id}">
+    <div class="big" role="img" aria-label="${ic.ja}案のアイコン">${ic.art}</div>
+    <div class="meta">
+      <h2 id="h-${ic.id}">${ic.ja}<span class="en">${ic.en}</span>${ic.pick ? '<span class="tag">おすすめ</span>' : ''}</h2>
+      <p>${ic.why}</p>
+      <div class="sizes">${[128, 64, 32, 16].map((s) => `<figure><div style="width:${s}px;height:${s}px">${ic.art.replace('<svg ', `<svg width="${s}" height="${s}" `)}</div><figcaption>${s}px</figcaption></figure>`).join('')}</div>
+    </div>
+  </section>`).join('');
+</script>

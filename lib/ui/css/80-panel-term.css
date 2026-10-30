@@ -1,0 +1,46 @@
+#mbody.pterm #mhist,#mbody.pterm .viewpick{display:none}
+#mterm{display:none}
+/* 会話 showing: a live terminal stays laid out but hidden, so a /command can be typed behind the page */
+#mbody{position:relative}
+#mbody:not(.pterm) #mterm.live{display:flex;flex-direction:column;position:absolute;left:0;right:0;top:0;height:var(--mtermh,420px);box-sizing:border-box;opacity:0;pointer-events:none;z-index:-1;overflow:hidden}
+/* edge to edge; what the CLI's own screen shows (input, status) is not repeated */
+#mbody.pterm #mterm{display:flex;flex-direction:column;flex:1;min-height:340px;margin:0 -16px -12px;overflow:hidden;border-top:1px solid var(--line)}
+/* 残作業 / 作ったもの: the same line in both views; opened, at most a third of the panel */
+#mbody.pterm .mnote:not(.queued){display:none}
+#mbody.pterm:has(#mterm.live) .row.msg.tbox,#mbody.pterm:has(#mterm.live) .row.msg.tbox~.toast,#mbody.pterm:has(#mterm.live) .mnote{display:none}
+#mbody .hbar .sp{flex:1}
+#mterm .ppty{flex:1;min-height:0;height:100%;padding:8px 4px 4px 12px;border:0}
+#mterm .ppty .plabel{display:none}
+#mterm .ppty .pbody{height:100%}
+#mterm .mtstart{display:flex;align-items:center;text-align:center}
+
+
+/* dark only once a terminal is in it (else a black flash between cards), in the terminal's own bg so no frame shows; dark in the light theme too (see 10-terminal.css) */
+#mterm.live{background:var(--term-bg)}
+body.light #mterm{--term-bg:#0d1117}
+#mterm .mtwait,#mterm .mtstart{color:var(--dim)}
+#mterm .mtstart{margin:auto;padding:14px 16px;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 12px;max-width:none;font-size:var(--fs-small);color:var(--fg)}
+#mterm .mtstart .dim{color:var(--dim)}
+#mterm .mtwait{padding:10px 16px;font-size:var(--fs-small)}
+/* the panel is the terminal: the ここで開く chip would open a second one */
+#mbody.hasterm .mbtns .ptygo{display:none}
+
+.card.compact .cwait{font-size:var(--fs-meta);color:var(--dim);margin:2px 0 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+
+#detail.sess .mhead{display:none}
+#detail.sess #mbody{padding-top:10px;gap:8px}
+
+.card[draggable=true]{-webkit-user-drag:element}
+body.dragging section.col[data-col]{transition:background .12s ease,box-shadow .12s ease}
+section.col.dropon{background:color-mix(in srgb,var(--info) 8%,transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--info) 45%,transparent);border-radius:12px}
+#showdone.dropon{box-shadow:0 0 0 2px var(--info)}
+
+.mmodew{position:relative;display:inline-flex}
+.modemenu{position:absolute;bottom:calc(100% + 6px);left:0;z-index:5;display:flex;flex-direction:column;min-width:240px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-hi)}
+.modemenu[hidden]{display:none}
+.modemenu button{all:unset;display:flex;flex-direction:column;gap:1px;padding:6px 10px;border-radius:6px;font-size:var(--fs-small);cursor:pointer;line-height:1.35}
+.modemenu button:hover,.modemenu button:focus{background:var(--hover)}
+.modemenu button.on b{color:var(--info)}
+.modemenu button .dim{font-size:var(--fs-meta)}
+

@@ -1,0 +1,16 @@
+.keyset{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0;font-size:var(--fs-small)}
+.keyset .kpre{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.keyset .kmsg{min-height:1.6em;color:var(--dim)}
+.keyset .kmsg.warn{color:var(--bad)}
+.keyset section{margin:6px 0 4px}
+.keyset h3{font-size:var(--fs-small);color:var(--dim);font-weight:600;margin:0 0 4px;font-family:var(--mono)}
+.keyset .krow{display:flex;align-items:center;gap:8px;padding:2px 0}
+.keyset .kl{flex:1;min-width:0;color:var(--fg)}
+.keyset .kkey{font-family:var(--mono);font-size:var(--fs-meta);min-width:6em;padding:3px 10px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.keyset .kkey:hover{background:var(--hover)}
+.keyset .kkey.custom{color:var(--ok);border-color:var(--ok)}
+.keyset .kkey.cap{color:var(--warn);border-color:var(--warn);outline:2px solid var(--warn)}
+.keyset .kreset[hidden]{display:none}
+.keyset .kpb.on{border-color:var(--ok);color:var(--ok)}
+.keyset .kfix{color:var(--dim);line-height:1.7;margin-top:8px}
+#help .hkeys{background:transparent;border:1px solid var(--line);border-radius:6px;color:var(--dim);cursor:pointer;font:inherit;margin-right:8px;padding:0 8px}

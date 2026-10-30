@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rally</title>
+<link rel="icon" href="icon.png">
+<meta name="description" content="手元で動いているすべてのコーディングエージェントのセッションを、「誰の番か」で1つのリストに並べる Mac アプリ。Claude Code / Codex / Antigravity / Gemini CLI / Cursor。">
+<style>
+:root{--bg:#1a1b26;--card:#1f2335;--term:#16161e;--line:#3b4261;--fg:#c0caf5;--dim:#8991b8;--ok:#9ece6a;--warn:#e0af68;--info:#7aa2f7;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e6e7ed;--card:#f5f5f9;--term:#d8d9e0;--line:#b4b8cc;--fg:#343b58;--dim:#565a6e;--ok:#3f6b1f;--warn:#7a5a1e;--info:#2e5fd0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13px}
+header .wrap{display:flex;gap:18px;align-items:center;height:48px}
+header b{color:var(--ok)}
+header a{color:var(--dim);text-decoration:none}header a:hover{color:var(--fg)}
+header .sp{flex:1}
+.hero{padding:64px 0 28px}
+.hero h1{font-size:clamp(28px,4.6vw,46px);line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--ok)}
+.hero p{color:var(--dim);font-size:17px;max-width:720px;margin:0}
+.cmd{display:inline-flex;gap:10px;align-items:center;margin-top:26px;background:var(--term);border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:14px}
+.cmd .p{color:var(--ok);font-weight:700}
+.shot{margin:34px 0 8px;border-radius:12px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.shot img{display:block;width:100%;height:auto}
+.cap{color:var(--dim);font-size:13px;text-align:center;margin:0 0 56px}
+h2{font-size:22px;margin:56px 0 18px}
+h2 .p{font-family:var(--mono);color:var(--ok);margin-right:8px}
+.lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.lane{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.lane b{display:block;font-size:16px;margin-bottom:4px}
+.lane span{color:var(--dim);font-size:14px}
+.lane.you{border-left:4px solid var(--warn)}.lane.stale{border-left:4px solid var(--dim)}.lane.work{border-left:4px solid var(--ok)}.lane.done{border-left:4px solid var(--line)}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 28px}
+.feat div{padding:4px 0}
+.feat b{display:block;font-size:15px}
+.feat span{color:var(--dim);font-size:14px}
+kbd{font-family:var(--mono);font-size:12px;color:var(--ok);border:1px solid var(--line);border-radius:4px;padding:0 5px;background:var(--term)}
+pre{background:var(--term);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow:auto;font:13px/1.6 var(--mono)}
+pre .c{color:var(--dim)}
+ul.req{padding-left:1.2em;color:var(--dim)}ul.req li b{color:var(--fg);font-weight:600}
+footer{border-top:1px solid var(--line);margin-top:72px;padding:24px 0 40px;color:var(--dim);font-size:13px;font-family:var(--mono)}
+a{color:var(--info)}
+.brand{display:inline-flex;align-items:center;gap:8px}
+@media (max-width:640px){.hero{padding:40px 0 18px}.cmd{font-size:12.5px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><b class="brand"><img src="icon.png" alt="" width="22" height="22">Rally</b><span class="sp"></span><a href="#lanes">仕組み</a><a href="#features">できること</a><a href="#install">入れ方</a><a href="https://github.com/sue738/rally">GitHub</a></div></header>
+<main class="wrap">
+<section class="hero">
+<h1>エージェントがいくつ動いていても、<br><em>次は誰の番か</em>がひと目でわかる。</h1>
+<p>Claude Code を3つ、Codex を1つ、Cursor も横で — 手元で走っているコーディングエージェントのセッションを全部、1つのリストに並べます。どれがあなたの許可を待っていて、どれが作業中で、どれが止まったままなのか。見て、そのまま答え、そのセッションの本物のターミナルも横で開けます。</p>
+<div class="cmd"><span class="p">❯</span>brew install --cask sue738/tap/rally</div>
+</section>
+<div class="shot"><picture><source srcset="board-light.png" media="(prefers-color-scheme: light)"><img src="board-dark.png" alt="Rally の画面。左に列ごとのセッションのリスト(Your Turn・Waiting・Working・Completed)、右に選んだセッションのターミナル" width="1800" height="1000"></picture></div>
+<p class="cap">画面は架空のデータです</p>
+
+<h2 id="lanes"><span class="p">❯</span>4つの列、ひとつの問い:誰の番?</h2>
+<div class="lanes">
+<div class="lane you"><b>Your Turn</b><span>許可を待っている・質問している・返事をして止まった。いちばん上が、いちばんあなたを待っているもの。</span></div>
+<div class="lane stale"><b>Waiting</b><span>6〜24時間動いていない。終わったのではなく、忘れられているかもしれないもの。</span></div>
+<div class="lane work"><b>Working</b><span>いま書いている、サブエージェントが動いている、またはプロセスが作業中と言っている。</span></div>
+<div class="lane done"><b>Completed</b><span>完了にしたもの、1日以上前のもの、一度きり・自動で走ったもの。普段は隠れています。</span></div>
+</div>
+<p style="color:var(--dim);font-size:14px">分類は、各エージェントが手元に残している会話記録(<code>~/.claude</code>・<code>~/.codex</code> など)と、実行中のプロセスの状態(<code>claude agents</code>)から決めます。どこから起動したセッションでも拾います。ヘッダーの「表示」で、カードに出す項目(プロジェクト・モデル・Σトークン・API 換算の額・最後の発言など)を選べます。</p>
+
+<h2 id="features"><span class="p">❯</span>できること</h2>
+<div class="feat">
+<div><b>許可にその場で答える</b><span>許可確認や質問が来ると、画面の隅に小さなカードが出ます(フォーカスは奪いません)。端末と同じ選択肢で、そこから答えられます。<kbd>⌘Y</kbd> で許可。</span></div>
+<div><b>見たまま返事をする</b><span>パネルの入力欄から、そのセッションの続きとして送信。「今の作業後に送る」なら空き次第に届きます。</span></div>
+<div><b>本物のターミナルをパネルで</b><span><code>claude attach</code>、止まっていればここで再開。Codex・Antigravity も。アプリを閉じても切り離すだけで、セッションは動き続けます。</span></div>
+<div><b>新しいセッションを始める</b><span><kbd>⌘N</kbd>。エージェント・フォルダ・モデル・権限モード(plan / 編集は許可 / auto)を選んで。worktree で分ける、×3 で並べる、Chrome を操作させる。</span></div>
+<div><b>サブエージェントも親の下に</b><span>動いているもの、返ってきた結果。クリックでその会話を読めます。</span></div>
+<div><b>トークンと費用</b><span>カードとパネルに Σ トークンと、API で払ったらいくらかの目安。Claude と Codex の 5時間・週の残りはヘッダーに。</span></div>
+<div><b>通知と Dock バッジ</b><span>カードが Your Turn に来たら macOS の通知。クリックでそのカードが開きます。</span></div>
+<div><b>変更をレビュー</b><span><kbd>D</kbd> で、そのセッションが書いた・編集したファイルの差分を、プルリクエストのように並べて。</span></div>
+<div><b>キーボードだけで</b><span><kbd>⌘K</kbd> パレット、<kbd>↑↓</kbd> でカード、<kbd>@</kbd> でファイル、<kbd>/</kbd> でスキル、<kbd>⌘C</kbd> で送信の取り消し。一覧は <kbd>?</kbd>、キーは変えられます。</span></div>
+</div>
+
+<h2 id="install"><span class="p">❯</span>入れ方</h2>
+<p>macOS のアプリ(<a href="https://github.com/sue738/rally/releases">リリース</a>から dmg をダウンロードして Applications へ。初回だけ「システム設定 → プライバシーとセキュリティ → このまま開く」が要ります)。Homebrew なら:</p>
+<pre>brew install --cask sue738/tap/rally   <span class="c"># 初回の確認も済ませます</span></pre>
+<p>ブラウザで使う(CLI だけ):</p>
+<pre><span class="c"># Node 22.13 以上</span>
+npx github:sue738/rally       <span class="c"># http://127.0.0.1:7331/ が開きます</span>
+npx github:sue738/rally now   <span class="c"># 同じ列をターミナルに</span></pre>
+<ul class="req">
+<li><b>対応</b>: Claude Code(許可への回答・送信・ターミナルまで)、Codex CLI・Antigravity(送信と開始、ターミナル)、Gemini CLI・Cursor(一覧のみ)</li>
+<li><b>アプリ版</b>: macOS 14 以上。Node は同梱。<kbd>⌥⌘K</kbd> でどこからでも呼び出せます</li>
+<li><b>許可に Rally で答える</b>: <code>~/.claude/settings.json</code> に PermissionRequest フックを足します(Rally はこのファイルを書き換えません。手順は README に)</li>
+<li><b>データ</b>: Rally が読むのは手元の会話記録だけで、書き込むのは <code>~/.rally/</code> だけ。サーバーもアカウントもありません。題名づけと残作業の棚卸しは、あなた自身の <code>claude</code> CLI を呼んで行います(その分はあなたの利用枠を使います)</li>
+</ul>
+</main>
+<footer><div class="wrap">Rally · MIT License · <a href="https://github.com/sue738/rally">github.com/sue738/rally</a></div></footer>
+</body>
+</html>

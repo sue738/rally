@@ -1,0 +1,11 @@
+/* 今の作業後に送る (22-whenfree.js) */
+.hist .heldq{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.hist .turn.user.held{background:transparent;border:1px dashed color-mix(in srgb,var(--info) 45%,var(--line));opacity:.85}
+.hist .turn.held .who .peer.wf{margin-left:0;color:var(--info);font-weight:600}
+.hist .turn.held .hacts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;white-space:normal;font-size:var(--fs-meta)}
+.hist .turn.held .hacts .dim{margin-right:auto}
+.hist .turn.held .hacts button.mini{padding:2px 10px;font-size:var(--fs-meta)}
+.hist .turn.held .qerr{white-space:normal;color:var(--bad);font-size:var(--fs-meta);margin-top:4px}
+.hist .turn.held .hacts{justify-content:flex-end}
+.hist .turn.held .hacts .eta{margin-right:auto;color:var(--dim);font-size:var(--fs-meta);font-variant-numeric:tabular-nums}
+.hist .turn.held textarea.hbox{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 8px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;resize:vertical;white-space:pre-wrap}

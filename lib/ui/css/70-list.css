@@ -1,0 +1,24 @@
+/* リスト: the lanes stacked in one column, same cards and keys as the board. */
+body.vlist main{display:flex!important;flex-direction:column;gap:14px;max-width:1180px;margin:0}
+body.vlist .col{min-width:0;gap:4px}
+body.vlist .col .list{min-height:0;max-height:none;overflow:visible}
+body.vlist .col h2{position:sticky;top:0;z-index:2;background:var(--bg);padding:4px 0}
+#listhint{display:none}
+/* Desktop width: the list docks left and the panel fills the rest; the terminal strip runs under both. */
+:root{--listw:340px;--termbar:min(var(--termh,220px),70vh)}
+body.termclosed{--termbar:45px}
+@media (min-width:1011px){
+  body.vlist main,body.vlist.withpanel main{position:fixed;left:0;top:var(--hdrh,0px);bottom:var(--termbar);width:var(--listw);max-width:none;display:block!important;padding:8px 8px 16px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scroll-padding-top:30px;border-right:1px solid var(--line);background:var(--bg)}
+  body.vlist .col+.col{margin-top:14px}
+  body.vlist .col h2{padding:4px 4px}
+  body.vlist #detail.modal{left:var(--listw);right:0;width:auto;max-width:none;bottom:var(--termbar);box-shadow:none;border-left:0}
+  body.vlist.withpanel #term,body.vlist #term{left:0;right:0}
+  body.vlist #listhint{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:fixed;left:var(--listw);right:0;top:var(--hdrh,0px);bottom:var(--termbar);color:var(--dim);font-size:var(--fs-small);pointer-events:none}
+  body.vlist #listhint b{font-weight:600;font-size:var(--fs-body)}
+  body.vlist #listhint span{font-size:var(--fs-small);opacity:.8}
+  body.vlist.withpanel #listhint{display:none}
+  /* no × in the docked list: there is nothing to close to */
+  body.vlist.lkeep #mclose,body.vlist.lkeep #mclose2{display:none}
+}
+.card.compact .last{display:none}
+

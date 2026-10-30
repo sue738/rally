@@ -1,0 +1,68 @@
+/* ---- the prompt: message boxes look like the terminal they extend ---- */
+.tbox .prompt{position:relative;display:flex;align-items:flex-start;gap:9px;padding:6px 0;font-family:var(--mono)}
+
+.tbox .prompt .ps{color:var(--dim);font-size:var(--fs-small);line-height:1.6;user-select:none;flex:none;transition:color .12s ease}
+.tbox .prompt:focus-within .ps{color:var(--ok)}
+#mbody .tbox .prompt textarea,#ntext{flex:1;width:100%;background:transparent;color:var(--fg);border:0;border-radius:0;box-shadow:none;outline:none;padding:0;margin:0;
+  font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;caret-color:var(--ok);min-height:20px;resize:none;overflow:auto}
+#mbody .tbox .prompt textarea:focus,#ntext:focus{border:0;box-shadow:none;outline:none}
+#mbody .tbox .prompt textarea::placeholder,#ntext::placeholder{color:color-mix(in srgb,var(--dim) 70%,transparent)}
+.tbox .prompt.grow{flex:1;min-height:0}
+.tbox .prompt.grow textarea{min-height:140px;height:100%;resize:none}
+#mhist.tbox{border-top:0;padding-top:4px}
+.tpreview{font-family:var(--mono);font-size:var(--fs-meta);color:var(--dim);padding:0 2px 7px;white-space:normal;overflow-wrap:anywhere;flex:none}
+.tpreview .pdir{color:var(--info)}.tpreview .ps{color:var(--ok)}
+.tbox .foot{font-family:var(--mono);gap:4px}
+.tbox .flag,.tform .tk{font-family:var(--mono);font-size:var(--fs-meta);color:var(--dim)}
+.tbox .chips,.tform .chips{gap:2px}
+.tbox .chips button,.tform .chips button{border:0;border-radius:4px;background:transparent;font-family:var(--mono);font-size:var(--fs-meta);padding:2px 7px}
+.tbox .chips button.on,.tform .chips button.on{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+button.mini.tflag{border:0;border-radius:4px;background:transparent;font-family:var(--mono);font-size:var(--fs-meta);padding:2px 7px;color:var(--info)}
+button.mini.tflag:hover{background:var(--hover)}
+button.mini.toggle.tflag{color:var(--dim)}button.mini.toggle.tflag::before{display:none}
+button.mini.toggle.tflag.on{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent);border:0}
+.tbox .hint{font-family:var(--mono)}
+.tform{gap:3px}
+.tform .tl{display:flex;align-items:baseline;gap:12px;font-family:var(--mono);font-size:var(--fs-small);min-height:26px}
+.tform .tk{min-width:48px;flex:none}
+.tform .v{flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#mmeta.tform #ndir{flex:1;min-width:180px;box-shadow:none;background:transparent;border:0;border-radius:0;font-family:var(--mono);font-size:var(--fs-small);color:var(--info);padding:3px 0}
+#mmeta.tform #ndir:focus{outline:none;box-shadow:none;caret-color:var(--ok)}
+.tform .chips.dirs{margin-top:0}
+#nwtinfo .v{flex-direction:column;align-items:stretch;gap:2px}
+#nwtinfo .wtwarn{color:var(--warn)}
+#nwtinfo code{font-size:var(--fs-meta)}
+#mmeta.tform #nwtcmd{box-shadow:none;background:transparent;border:0;border-radius:0;font-family:var(--mono);font-size:var(--fs-small);color:var(--fg);padding:3px 0}
+#mmeta.tform #nwtcmd:focus{outline:none;caret-color:var(--ok)}
+.skillpop{position:absolute;z-index:4;left:22px;right:0;font-family:var(--mono);font-size:var(--fs-small);max-height:calc(8 * 26px + 8px);overflow:auto;background:var(--term-bg);border-radius:6px;padding:4px;display:block;box-shadow:var(--shadow-hi)}
+.row.msg .skillpop{bottom:100%}
+#mhist .skillpop{top:calc(1.6em + 8px)}
+/* block, not a flex column: a flex column shrinks the rows instead of scrolling */
+.skillpop .sk{display:flex;flex-shrink:0;align-items:baseline;gap:8px;padding:4px 8px;border-radius:5px;cursor:pointer;white-space:nowrap;overflow:hidden}
+.skillpop .sk b{color:var(--info);font-weight:600;flex:none}
+.skillpop .sk .sc{font-size:var(--fs-micro);color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 5px;flex:none}
+.skillpop .sk .d{color:var(--dim);overflow:hidden;text-overflow:ellipsis}
+.skillpop .sk.on{background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.skillpop .sk.on b{color:var(--ok)}
+.skillpop .dim{padding:4px 8px}
+.skillpop .hintrow{padding:4px 8px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skillpop .hintrow .d{color:var(--dim)}
+.skillpop .hintrow+.sk{margin-top:2px}
+button.mini.tflag.primary{color:var(--ok)}
+#limits{display:flex;gap:12px;font-family:var(--mono);font-size:var(--fs-meta);color:var(--fg);white-space:nowrap}
+#limits .lim{display:inline-flex;flex-direction:column;gap:2px}#limits .lim b{font-weight:600}
+#limits .limtop{display:flex;gap:1ch}
+#limits .limbar{position:relative;display:block;height:3px;border-radius:2px;background:var(--line);overflow:visible}
+#limits .limbarfill{position:absolute;inset:0 auto 0 0;height:100%;border-radius:2px;background:var(--ok)}
+#limits .lim.warn .limbarfill{background:var(--warn)}#limits .lim.bad .limbarfill{background:var(--bad)}
+#limits .limbarpace{position:absolute;top:-1.5px;width:1.5px;height:6px;background:var(--fg);opacity:.55;transform:translateX(-50%)}
+#limits .lim.warn b{color:var(--warn)}#limits .lim.bad b{color:var(--bad)}
+#limits .limg{display:flex;gap:10px;align-items:center}
+#limits .limg+.limg{padding-left:12px;border-left:1px solid var(--line)}
+#limits .limn{color:var(--dim)}
+#limits .limset{font-family:inherit}
+.limpop{position:fixed;z-index:30;width:420px;max-width:calc(100vw - 16px);padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:var(--fs-small);display:grid;gap:8px}
+.limpop p{margin:0;line-height:1.6}.limpop pre{margin:0;padding:8px;background:var(--term-bg);border-radius:6px;font-family:var(--mono);font-size:var(--fs-meta);white-space:pre-wrap;word-break:break-all}
+.limpop .mini{justify-self:start}
+#q{flex:0 1 220px;min-width:110px}
+#limits.tight .lim .dim{display:none}#limits.tighter .dim{display:none}#limits.tightest .limg+.limg{display:none}

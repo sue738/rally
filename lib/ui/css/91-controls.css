@@ -1,0 +1,92 @@
+/* Controls: a CHOICE among views is a segmented control, an ACTION a filled button with a mark, an ICON button a borderless ghost. */
+/* on body, not :root: built from --card and --fg, which body.light redefines */
+:root{--ctl-h:28px;--ctl-h-sm:24px;--ctl-r:8px;--ctl-ri:6px}
+body{--track:color-mix(in srgb,var(--fg) 8%,transparent);--raised:color-mix(in srgb,var(--fg) 16%,var(--card));
+  --raised-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 .5px rgba(255,255,255,.08)}
+body.light{--raised:var(--card);--raised-shadow:0 1px 2px rgba(16,22,33,.14),0 0 0 .5px rgba(16,22,33,.10)}
+
+/* segmented */
+.chips{display:inline-flex;align-items:stretch;gap:2px;padding:2px;box-sizing:border-box;height:var(--ctl-h-sm);border:0;border-radius:var(--ctl-r);background:var(--track);overflow:visible}
+.chips button{box-sizing:border-box;height:100%;margin:0;padding:0 12px;border:0;border-radius:var(--ctl-ri);background:transparent;color:var(--dim);font-size:var(--fs-meta);font-weight:500;line-height:1;display:inline-flex;align-items:center;box-shadow:none}
+.chips button+button{border-left:0}
+.chips button:not(.on):hover{color:var(--fg);background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.chips button.on{background:var(--raised);color:var(--fg);font-weight:600;box-shadow:var(--raised-shadow);border:0}
+
+/* actions */
+#mmeta .ttlrow button.mini.tlb{box-sizing:border-box;height:var(--ctl-h);padding:0 12px;border:0;border-radius:var(--ctl-r);font-size:var(--fs-small);font-weight:600;
+  background:color-mix(in srgb,var(--fg) 8%,transparent);color:var(--fg)}
+#mmeta .ttlrow button.mini.tlb:hover{background:color-mix(in srgb,var(--fg) 14%,transparent)}
+#mmeta .ttlrow button.mini.tlb.primary{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+#mmeta .ttlrow button.mini.tlb.primary:hover{background:color-mix(in srgb,var(--ok) 26%,transparent)}
+#mmeta .ttlrow button#dopark::before{content:'⏸ ';font-size:.9em}
+#mmeta .ttlrow button#unpark::before{content:'↩ ';font-size:.95em}
+#mmeta .ttlrow button#dodone::before{content:'✓ ';font-size:.95em}
+#mmeta .ttlrow button#undone::before{content:'↩ ';font-size:.95em}
+button.mini.compact{box-sizing:border-box;height:var(--ctl-h-sm);padding:0 10px;border:0;border-radius:var(--ctl-r);background:color-mix(in srgb,var(--fg) 8%,transparent);color:var(--fg);font-size:var(--fs-meta);font-weight:600}
+button.mini.compact:hover{background:color-mix(in srgb,var(--fg) 14%,transparent)}
+
+/* icon buttons */
+#mmeta .ttlrow #mcopy,#mmeta .mfoldbtn,#mmeta .mx{flex:none;box-sizing:border-box;width:var(--ctl-h);height:var(--ctl-h);padding:0;border:0;border-radius:var(--ctl-r);
+  display:inline-flex;align-items:center;justify-content:center;background:transparent;color:var(--dim);line-height:1;cursor:pointer}
+#mmeta .ttlrow #mcopy:hover,#mmeta .mfoldbtn:hover,#mmeta .mx:hover{background:color-mix(in srgb,var(--fg) 10%,transparent);color:var(--fg)}
+#mmeta .mfoldbtn{font-size:16px;color:var(--fg)}
+#mmeta .mx{font-size:17px}
+#detail:not(.sess) #mmeta .mx{display:none}
+
+/* the panel title keeps ≥ 16 characters; when too narrow, the controls wrap to a line under it */
+#mmeta{container:mmeta/inline-size}
+#mmeta .ttlrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 4px}
+#mmeta .ttlrow .ttl{flex:1 1 0;min-width:0;margin:0 4px;font-size:var(--fs-title);font-weight:600;color:var(--fg);line-height:var(--ctl-h);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mmeta .ttlrow .tctl{order:1;flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-left:calc(var(--ctl-h) + 8px);box-sizing:border-box}
+#mmeta .ttlrow .tctl:empty{display:none}
+#mmeta .ttlrow .tctl>.tlane,#mmeta .ttlrow .tctl>#dopark,#mmeta .ttlrow .tctl>#unpark{margin-left:auto}
+#mmeta .ttlrow .tlane{flex:none;font-size:var(--fs-meta);white-space:nowrap}
+#mmeta .ttlrow button.mini.tlb{flex:none}
+@container mmeta (min-width:800px){
+  #mmeta .ttlrow{flex-wrap:nowrap}
+  #mmeta .ttlrow .tctl{order:0;flex:none;flex-wrap:nowrap;padding-left:0;margin-right:4px}
+}
+#mmeta.fold>:not(.ttlrow):not(.moremenu):not(.viewpick){display:none}
+
+header button,header button.mini,header button.mini.toggle{box-sizing:border-box;height:var(--ctl-h);display:inline-flex;align-items:center;gap:6px;padding:0 8px;border-radius:var(--ctl-r);line-height:1}
+header button.mini.toggle::before{content:'';flex:none;box-sizing:border-box;width:22px;height:12px;margin:0;border-radius:6px;vertical-align:0;
+  background:radial-gradient(circle 4px at 6px 50%,#fff 96%,transparent 100%),color-mix(in srgb,var(--dim) 50%,transparent)}
+header button.mini.toggle.on::before{background:radial-gradient(circle 4px at 16px 50%,#fff 96%,transparent 100%),var(--info)}
+header #helpbtn,header #theme{width:var(--ctl-h);padding:0;justify-content:center}
+/* the send row switches carry a box, so they read as settings, not actions */
+button.mini.toggle.tflag{display:inline-flex;align-items:center;gap:6px}
+button.mini.toggle.tflag::before{display:inline-block;content:'';flex:none;width:12px;height:12px;margin:0;box-sizing:border-box;border-radius:3px;
+  border:1.5px solid color-mix(in srgb,var(--fg) 42%,transparent);background:transparent;transition:background .12s ease,border-color .12s ease}
+button.mini.toggle.tflag:hover::before{border-color:color-mix(in srgb,var(--fg) 70%,transparent)}
+button.mini.toggle.tflag.on::before{border-color:var(--ok);background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2l2.3 2.3 4.7-5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat}
+button.mini.toggle.tflag[hidden]{display:none}
+
+.cswrap{position:relative;display:inline-flex}
+.cspop{position:absolute;right:0;top:calc(100% + 6px);z-index:8;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:230px;padding:8px;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-hi)}
+.cspop[hidden]{display:none}
+.cspop .csh{font-size:var(--fs-meta);color:var(--dim);letter-spacing:.04em;padding:2px 6px 4px}
+.cspop button.mini.toggle.tflag{justify-content:flex-start;border:0;background:transparent;padding:5px 6px;text-align:left}
+.cspop button.mini.toggle.tflag:hover{background:var(--hover)}
+.cspop .csn{font-size:var(--fs-micro);line-height:1.5;padding:6px 6px 2px;max-width:30ch}
+.cspop .cgroup{display:flex;flex-direction:column;gap:2px;margin:2px 0;padding:2px 0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line)}
+.cspop .cdrag{cursor:grab}
+.cspop .cdrag.dragging{opacity:.35}
+.cspop .cgrip{flex:none;color:var(--dim);font-style:normal;margin-right:2px;cursor:grab}
+.cspop .linklike{all:unset;cursor:pointer;color:var(--info)}
+.cspop .linklike:hover{text-decoration:underline}
+.card .ctok,.card .cusd,.card .cctx{color:var(--dim);font-size:var(--fs-meta);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cline .ctok,.cline .cusd,.cline .cctx{flex:none}
+header:has(.cspop:not([hidden])){z-index:40}
+/* the new session's folders are a list of picks, not a segmented control: they wrap */
+.nsopts .chips.dirs{height:auto;flex-wrap:wrap;gap:6px;padding:0;background:transparent}
+.nsopts .chips.dirs button{height:var(--ctl-h-sm);border:1px solid var(--line);border-radius:999px;padding:0 10px}
+.nsopts .chips.dirs button.on{border-color:color-mix(in srgb,var(--info) 60%,var(--line));background:color-mix(in srgb,var(--info) 10%,transparent);box-shadow:none}
+/* ターミナル / 会話 is the header's one setting: the panel keeps the element (its code asks whether a terminal view exists) but shows nothing */
+#mbody .mviews,#mbody .kbdhint{display:none}
+header .pviewseg{height:var(--ctl-h)}
+header .pviewseg button{padding:0 10px}
+/* the window's title bar is this header (app: fullSizeContentView): the traffic lights sit at its left, a bare part of it drags the window */
+:root.winchrome header{padding:4px 16px 4px 88px;min-height:36px;-webkit-user-select:none;user-select:none}
+:root.winchrome.winfull header{padding-left:16px}

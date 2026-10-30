@@ -1,0 +1,106 @@
+/* ↓ 最新へ (placed by syncLatest) */
+button.mini.tolatest{position:absolute;z-index:4;transform:translateX(-50%);border-radius:999px;padding:3px 12px;font-size:var(--fs-small);background:var(--card);color:var(--info);border:1px solid color-mix(in srgb,var(--info) 45%,var(--line));box-shadow:var(--shadow-hi,var(--shadow));cursor:pointer}
+button.mini.tolatest:hover{background:color-mix(in srgb,var(--info) 10%,var(--card))}
+button.mini.tolatest[hidden]{display:none}
+/* リスト with the terminal open: the strip is a full-height right column; its grip drags the width. */
+:root{--termw:440px}
+@media (min-width:1011px){
+  body.vlist:not(.termclosed){--termbar:0px}
+  body.vlist:not(.termclosed) #term,body.vlist.withpanel:not(.termclosed) #term{left:auto;right:0;top:var(--hdrh,0px);bottom:0;width:var(--termw);height:auto;max-height:none;border-top:0;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.10)}
+  body.vlist:not(.termclosed) #detail.modal{right:var(--termw)}
+  /* above the panel (z 10), or the half of the grip over it takes no mouse */
+  body.vlist:not(.termclosed) #term{z-index:11}
+  body.vlist:not(.termclosed) #listhint{right:var(--termw)}
+  body.vlist:not(.termclosed) #termgrip{left:-20px;right:auto;top:0;bottom:0;width:40px;height:auto;cursor:col-resize}
+  body.vlist:not(.termclosed) #termgrip::before{width:4px;height:44px}
+  body.vlist:not(.termclosed) #termgrip:hover::before,body.vlist:not(.termclosed) #termgrip.dragging::before{width:4px;height:72px}
+  /* a tall column splits the other way: panes stacked, sharing the height by count */
+  body.vlist:not(.termclosed) #tbody,body.vlist:not(.termclosed) #tpanes,body.vlist:not(.termclosed) #ptys{flex-direction:column}
+  body.vlist:not(.termclosed) #tpanes,body.vlist:not(.termclosed) #ptys{min-width:0}
+  body.vlist:not(.termclosed) .tpane{min-height:0}
+  body.vlist:not(.termclosed) .tpane+.tpane{border-left:0;border-top:1px solid var(--line)}
+  body.vlist:not(.termclosed) #ptys .pty{min-height:0;border-left:0;border-top:1px solid var(--line)}
+  /* folded: a slim tab on the right edge, where it opens, not a bar across the bottom */
+  body.vlist.termclosed{--termbar:0px;--termtab:40px}
+  body.vlist.termclosed #term,body.vlist.withpanel.termclosed #term{left:auto;right:0;top:var(--hdrh,0px);bottom:0;width:var(--termtab);height:auto;max-height:none;border-top:0;border-left:1px solid var(--line);box-shadow:none}
+  body.vlist.termclosed #detail.modal,body.vlist.termclosed #listhint{right:var(--termtab)}
+  body.vlist.termclosed #termhead{flex-direction:column;height:100%;padding:10px 0;gap:10px;box-sizing:border-box}
+  body.vlist.termclosed #termhead b{writing-mode:vertical-rl;letter-spacing:.12em;order:2}
+  body.vlist.termclosed #termhead #termtoggle{order:1;width:28px;padding:0}
+  body.vlist.termclosed #termtoggle kbd{display:none}
+  /* the arrows point the way the column moves: ‹ opens it from the right edge, › puts it back */
+  body.vlist #termtoggle svg{transform:rotate(-90deg)}
+  body.vlist.termclosed #termtabs,body.vlist.termclosed #termcwd,body.vlist.termclosed #termsplit,body.vlist.termclosed #termgrip,body.vlist.termclosed #termhead .sp{display:none}
+  body.vlist.termclosed #termhead:hover{background:var(--hover)}
+}
+#notifybar{display:flex;align-items:center;gap:10px;padding:6px 16px;font-size:var(--fs-small);background:color-mix(in srgb,var(--warn) 12%,var(--bg));border-bottom:1px solid color-mix(in srgb,var(--warn) 35%,var(--line));color:var(--fg)}
+#notifybar[hidden]{display:none}
+#notifybar .nb-t{flex:1;min-width:0}
+#notifybar button{flex:none;min-height:22px}
+/* Two button sizes: standard (28px) and segment (24px). Pointer only: touch keeps the larger targets. */
+:root{--btn-h:28px;--btn-h-sm:24px}
+@media (hover:hover) and (min-width:761px){
+  button.mini,#termhead .thb{display:inline-flex;align-items:center;justify-content:center;gap:4px;box-sizing:border-box;height:var(--btn-h);padding:0 12px;font-size:var(--fs-small);line-height:1;border-radius:var(--ctl-r)}
+  #termhead .thb{border:1px solid var(--line);background:var(--card);color:var(--fg)}
+  #termhead #termtoggle{padding:0 10px;gap:5px}
+  #termhead .thb:hover,#termhead .mini:hover{background:var(--hover)}
+  .hist details.tools>summary{box-sizing:border-box;height:var(--btn-h-sm);padding:0 10px;font-size:var(--fs-meta);line-height:1;display:inline-flex;align-items:center}
+  button.mini.tflag,.tbox .chips button,.tform .chips button,button.mini.review{height:auto;line-height:inherit;padding:2px 7px;display:inline-block}
+}
+.hist .sentatt{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;white-space:normal}
+.hist .sentatt a.shot{margin-top:0}
+.hist .sentatt a.shot img{max-width:220px;max-height:140px;border-radius:6px}
+/* IME composition in a terminal: the terminal's colours, underlined, not xterm's white-on-black box */
+.xterm .composition-view{background:var(--term-bg);color:var(--fg);border-bottom:1px solid currentColor;padding:0}
+.tline.asking .tps,.tline.asking .ps{display:none}
+.tline .tq{flex:none;font-family:var(--mono);font-size:var(--fs-small);color:var(--fg);white-space:pre;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+.tline.asking{gap:0}
+.trun .tnote.task{color:var(--dim);font-size:var(--fs-meta);gap:10px}
+.trun .tnote.task .tshell{border:0;background:none;padding:0;font:inherit;color:var(--info);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.trun .tnote.task .tshell:hover{color:var(--fg)}
+
+/* the detail header: the title on its own line, then status, branch, subagents, 残作業 and 作ったもの flow on together;
+   an opened fold takes the whole width */
+#mmeta.sess{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 16px}
+#mmeta.sess>.ttlrow,#mmeta.sess>.mstat{flex-basis:100%}
+/* the folds are buttons, not drop-downs: pressed, their content opens as a modal over the panel (Esc, a click outside or the button again closes it) */
+#mmeta.sess details>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:2px 10px;border:1px solid var(--line);border-radius:var(--ctl-r,6px);background:var(--card)}
+#mmeta.sess details>summary::-webkit-details-marker{display:none}
+#mmeta.sess details>summary::before{content:none!important;display:none}
+#mmeta.sess .kids[open]>.kh{margin-bottom:0}
+#mmeta.sess details>summary:hover,#mmeta.sess details[open]>summary{background:var(--hover)}
+@supports selector(::details-content){
+#mmeta.sess details[open]::details-content{position:fixed;left:50%;top:12vh;transform:translateX(-50%);width:min(760px,calc(100vw - 48px));z-index:60;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,.28);padding:14px 18px;max-height:70vh;overflow:auto;box-sizing:border-box}
+#mmeta.sess details[open]::before{content:'';position:fixed;inset:0;z-index:59;background:rgba(0,0,0,.28);cursor:default}
+}
+#mmeta.sess>.acts{display:flex}
+#mmeta.sess .mstat>.prbox{display:inline-flex;margin:0}
+#mmeta.sess .mstat>.prbox[hidden]{display:none}
+#mmeta.sess>.mbtns{display:contents}
+#mmeta.sess>.viewpick{margin-left:auto}
+#mbody:not(.pterm) #mmeta.sess.fold>.viewpick{display:inline-flex}
+#mbody .hbar.empty{display:none}
+/* order by what you look for first. Status: where it is and why → how long it will take → context (whether to /compact)
+   → the branch (uncommitted work) → when it last moved → the folder → the totals and the cost, least looked at */
+#mmeta.sess .mstat>.lane{order:-3}
+#mmeta.sess .mstat>.why{order:-2}
+#mmeta.sess .mstat>.ctx{order:1}
+#mmeta.sess .mstat>.prbox{order:2}
+#mmeta.sess .mstat>.mago{order:3}
+#mmeta.sess .mstat>.mproj{order:4}
+#mmeta.sess .mstat>.mtotal{order:5}
+#mmeta.sess .mstat>.musd{order:6}
+/* buttons: what it made (and its diff) → what is left → its subagents → /compact and the terminal → the view switch at the right end */
+#mmeta.sess>.ttlrow{order:-10}
+#mmeta.sess>.mstat{order:-9}
+#mmeta.sess>:not(.ttlrow):not(.mstat){order:-8}
+#mmeta.sess>.acts{order:1}
+#mmeta.sess>.acts>.madebox{order:-1}
+#mmeta.sess>.kids{order:2}
+#mmeta.sess>.mbtns>*{order:3}
+#mmeta.sess>.viewpick{order:9}
+/* the status line keeps one height whatever comes and goes on it (an ETA when work starts, the branch when it is read):
+   wrapping to a second line pushed the conversation down under you. What does not fit is cut at the end, where the
+   totals and the cost are (order above) */
+#mmeta.sess .mstat{flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
+#mmeta.sess .mstat>*{flex:none}

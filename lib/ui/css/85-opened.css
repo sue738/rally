@@ -1,0 +1,5 @@
+/* ring and tint mark the open card; its colour stripe stays */
+.card.opened{background:color-mix(in srgb,var(--info) 9%,var(--card));box-shadow:inset 4px 0 0 var(--stripe,hsl(var(--hue,0) 62% 56% / .9)),0 0 0 2px var(--info),var(--shadow)}
+.card.opened[data-color]{box-shadow:inset 6px 0 0 var(--stripe),0 0 0 2px var(--info),var(--shadow)}
+.card.sub.opened{box-shadow:inset 3px 0 0 var(--stripe,hsl(var(--hue,0) 40% 60% / .6)),0 0 0 2px var(--info),var(--shadow)}
+.card{position:relative}

@@ -1,0 +1,78 @@
+/* The command strip: not a pty, and app-only; a browser gets it read-only. */
+#empty{grid-column:1/-1;color:var(--dim);font-size:var(--fs-small);padding:24px 4px;line-height:1.9}
+#empty b{color:var(--fg);font-weight:600}
+#empty[hidden]{display:none}
+#help[hidden]{display:none}
+#term{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.14);display:flex;flex-direction:column;height:var(--termh,220px);max-height:70vh}
+body.termclosed #term{height:45px}
+body:not(.termclosed) main{padding-bottom:var(--termh,220px)}
+body.termclosed main{padding-bottom:51px}
+body.withpanel #term{right:var(--panelw,var(--panelw0))}
+#termhead{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:var(--fs-small);color:var(--dim);cursor:pointer;flex:none}
+body.termclosed #termhead{border-bottom:0}
+#termhead b{font-size:var(--fs-small);color:var(--fg);font-weight:600}
+#termhead .sp{flex:1}
+.tscroll{flex:1;min-height:0;overflow:auto;background:var(--term-bg);font-family:var(--mono);cursor:text;padding:6px 0 4px}
+.tlog{margin:0;padding:0 12px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.55;display:flex;flex-direction:column;gap:6px}
+.trun{padding:0}
+.trun.busy .tout{color:var(--dim)}
+
+.trun .tcmd{color:var(--ok);white-space:pre-wrap;word-break:break-word}
+.trun .tout{margin:2px 0 0;white-space:pre-wrap;word-break:break-word;color:var(--fg)}
+.trun.bad .tout{color:var(--bad)}
+.trun .tnote{color:var(--dim)}
+.trun .tnote.task{color:var(--warn,var(--dim));display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:2px}
+.trun .tnote.task .tshell{font-size:var(--fs-meta)}
+#termtoggle kbd{font-family:var(--mono);font-size:var(--fs-micro);color:var(--dim);opacity:.8}
+#termtoggle svg{flex:none}
+body.termclosed .tscroll{display:none}
+#termtabs{display:flex;gap:2px;align-items:center;min-width:0;overflow:hidden}
+#termtabs .ttab{border:0;background:transparent;color:var(--dim);font-size:var(--fs-meta);font-family:var(--mono);padding:2px 8px;border-radius:4px;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;display:inline-flex;align-items:center;gap:6px}
+#termtabs .ttab.on{background:var(--term-bg);color:var(--fg)}
+#termtabs .ttab.gone{text-decoration:line-through;opacity:.7}
+#termtabs .ttab .tx{opacity:.55;padding:0 2px}#termtabs .ttab .tx:hover{opacity:1;color:var(--bad)}
+#termtabs .ttab.add{color:var(--info)}
+/* Command panes then shells side by side, sharing the width by count (flex-grow). */
+#tbody{flex:1;min-height:0;display:flex}
+/* The strip stays dark in the light theme: programs in it (Claude Code included) assume a dark terminal. */
+body.light #tbody{--term-bg:#0d1117;--fg:#e6edf3;--dim:#8b949e;--line:#30363d;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--info:#58a6ff;--hover:rgba(177,186,196,.12);color:var(--fg);background:var(--term-bg);color-scheme:dark}
+body.termclosed #tbody{display:none}
+#termtabs .ttab[data-t="cmd"]{display:none}
+#ptys{display:none;flex:0 1 0;min-width:0;min-height:0;background:var(--term-bg)}
+#ptys:not(:empty){display:flex}
+#ptys .pty{flex:1 1 0;min-width:0;position:relative;border-left:1px solid var(--line);padding:4px 0 2px 8px}
+#ptys .pty .pbody{height:100%}
+#ptys .pty.act{box-shadow:inset 0 2px 0 var(--info)}
+#ptys .pty .plabel{position:absolute;top:3px;right:14px;z-index:6;display:flex;align-items:center;gap:4px;font:var(--fs-meta) var(--mono);color:var(--dim);background:var(--term-bg);padding:1px 4px;border-radius:4px;opacity:0;transition:opacity .12s;max-width:60%}
+#ptys .pty:hover .plabel,#ptys .pty.gone .plabel{opacity:1}
+#ptys .pty .plabel .tl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ptys .pty.gone .plabel .tl{text-decoration:line-through}
+#ptys .pty .plabel .tx{border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:13px;padding:0 3px}#ptys .pty .plabel .tx:hover{color:var(--bad)}
+/* CJK in the terminal: scale Hiragino to fill its two cells (as Ghostty does), for these code points only. */
+@font-face{font-family:"AK Terminal CJK";src:local("HiraginoSans-W3"),local("Hiragino Sans W3");font-weight:400;size-adjust:120%;unicode-range:U+2E80-2FDF,U+3000-30FF,U+3190-31FF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FE30-FE4F,U+FF00-FFEF}
+@font-face{font-family:"AK Terminal CJK";src:local("HiraginoSans-W6"),local("Hiragino Sans W6");font-weight:700;size-adjust:120%;unicode-range:U+2E80-2FDF,U+3000-30FF,U+3190-31FF,U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+FE30-FE4F,U+FF00-FFEF}
+#ptys .xterm{height:100%}
+/* a thin rounded thumb instead of xterm's 14px slab */
+#ptys .xterm .scrollbar.vertical{width:10px!important;background:transparent!important;transition:opacity .25s}
+#ptys .xterm .scrollbar.vertical.invisible{opacity:0}
+#ptys .xterm:hover .scrollbar.vertical{opacity:1}
+#ptys .xterm .scrollbar.vertical .slider{width:5px!important;left:3px!important;border-radius:3px}#ptys .xterm-viewport{background:transparent!important}
+.tlog .cmd{color:var(--info)}.tlog .bad{color:var(--bad)}.tlog .note{color:var(--dim)}
+.tline{flex:none;display:flex;align-items:center;gap:8px;padding:4px 12px 6px}
+.tline .ps{color:var(--ok);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-small)}
+.tps{display:flex;align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-meta);white-space:nowrap;max-width:52%;overflow:hidden}
+.tps .pdir{color:var(--info);text-overflow:ellipsis;overflow:hidden}
+.tps .pgit{color:var(--warn)}
+.tps .pgit::before{content:'⎇ ';opacity:.8}
+.tps .pdirty{color:var(--bad)}
+.tps .pahead,.tps .pbehind{color:var(--dim)}
+.tin{flex:1;background:transparent;color:var(--fg);border:0;outline:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:var(--fs-small);padding:2px 0}
+.tin:disabled{color:var(--dim)}
+/* a visible, grabbable handle */
+#termgrip{position:absolute;z-index:3;left:0;right:0;top:-16px;height:30px;cursor:row-resize;display:flex;align-items:center;justify-content:center}
+#termgrip::before{content:'';width:44px;height:4px;border-radius:2px;background:var(--line);transition:background .12s ease}
+#termgrip:hover::before,#termgrip.dragging::before{background:var(--info);width:72px}
+@media (max-width:1010px){#term{height:34px}.tlog,.tline,#termgrip{display:none}body main{padding-bottom:40px}
+/* --panelw exists only after a drag; the 420px fallback would zero the strip on a 390px screen */
+body.withpanel #term{right:0}}
+.modal[hidden]{display:none}
