@@ -69,3 +69,6 @@ header #pendall.on,header #new.on{color:var(--fg);background:var(--hover)}
 .chips button.on .ver{color:inherit}
 #viewer .tag.del,#viewer .tag.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
 .turn .who .peer{color:var(--dim);font-weight:400;margin-left:4px}
+
+/* an HTML file, shown as the page (87-viewer.js) */
+.vbody iframe.vhtml{display:block;width:100%;height:calc(100% - 28px);min-height:60vh;border:0;border-radius:8px;background:#fff}
