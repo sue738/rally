@@ -828,6 +828,11 @@ console.log('== every button is also a command ==');
       busy === true && api.wfBusy(cx) === false && /c\.agent === 'codex' && !c\.subagent && c\.column === 'working'/.test(require('fs').readFileSync(require('path').join(__dirname, '..', 'lib', 'board', 'state.js'), 'utf8')));
   } catch (e) { ok(`codex whenfree — ${e.message}`, false); }
   try {
+    const h = api.mdRender('置き場所：https://claude.ai/artifact/B9gJ （元のHTMLは `~/Desktop/x/a.html`。');
+    ok('★ links: a URL straight after 「：」 is a link, and a ~/ path (in a code span too) opens in the viewer',
+      /：<a class="ext" href="https:\/\/claude\.ai\/artifact\/B9gJ"/.test(h) && /class="fpath"[^>]*data-p="~\/Desktop\/x\/a\.html"/.test(h));
+  } catch (e) { ok(`links — ${e.message}`, false); }
+  try {
     ok('★ 送信: every send says in the app log which way it went, a background send is checked against the record after 2 minutes like a typed one, and a message still missing is logged',
       /sendLog\(c,'typed'/.test(uiScript()) && /sendLog\(c,'held'/.test(uiScript()) && /sendLog\(c,wf&&!slash\?/.test(uiScript())
       && /setTimeout\(\(\)=>echoLate\(k,e\),ECHO_SENT_LATE_MS\)/.test(uiScript()) && /not in the record after sending: /.test(uiScript()) && /if\(c&&c\.queued&&Date\.now\(\)-e\.at<ECHO_KEEP_MS\)/.test(uiScript()));
