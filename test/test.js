@@ -1562,6 +1562,23 @@ console.log('== history: built-in commands and compaction ==');
       seq === 'user:やって | user:/context | cmdout:**Tokens:** 25k / 200k | mark:会話を要約しました(25k → 4k) | user:/model sonnet | cmdout:Set model to Sonnet | user:! git status | cmdout:clean');
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
   {
+    const root2 = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-cmd2-'));
+    const f2 = path.join(root2, 's.jsonl');
+    const L2 = [
+      { type: 'user', timestamp: ts(10), message: { role: 'user', content: '/compact' } },
+      { type: 'system', subtype: 'compact_boundary', timestamp: ts(80), content: 'Conversation compacted', compactMetadata: { preTokens: 903000, postTokens: 25000 } },
+      { type: 'user', timestamp: ts(10), message: { role: 'user', content: '<command-name>/compact</command-name>\n<command-message>compact</command-message>\n<command-args></command-args>' } },
+      { type: 'user', timestamp: ts(80), message: { role: 'user', content: '<local-command-stdout>Compacted</local-command-stdout>' } },
+      { type: 'user', timestamp: ts(200), message: { role: 'user', content: '<command-name>/compact</command-name>\n<command-message>compact</command-message>\n<command-args></command-args>' } },
+    ];
+    fs.writeFileSync(f2, L2.map((e) => JSON.stringify(e)).join('\n') + '\n');
+    try {
+      const seq = LM.history({ agent: 'claude', id: 'y', file: f2 }).turns.map((t) => t.kind + ':' + (t.text || '')).join(' | ');
+      ok('★ history: one /compact shows once (it is recorded as typed and again as a command after the summary); a later one still shows',
+        seq === 'user:/compact | mark:会話を要約しました(903k → 25k) | cmdout:Compacted | user:/compact');
+    } finally { fs.rmSync(root2, { recursive: true, force: true }); }
+  }
+  {
     const reply = { type: 'assistant', message: { id: 'm1', model: 'claude-sonnet-5-5', usage: { input_tokens: 5, cache_read_input_tokens: 936000, output_tokens: 10 } } };
     const cb = { type: 'system', subtype: 'compact_boundary', compactMetadata: { preTokens: 936000, postTokens: 12000 } };
     const u = LM.usageOf([JSON.stringify(reply), JSON.stringify(cb)], 'claude');
