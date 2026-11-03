@@ -80,14 +80,17 @@ if [ -n "$SIGN" ] && [ -f "$KC" ] && [ -f "$SIGN/pass" ]; then
   security unlock-keychain -p "$(cat "$SIGN/pass")" "$KC" 2>/dev/null &&
     ID=$(security find-identity "$KC" 2>/dev/null | awk '/AgentKanban Local Signing/{print $2; exit}')
 fi
-# the key must also be usable here: a keychain copied from another Mac lists the identity without its private key
-if [ -n "$ID" ] && ! security find-identity -v "$KC" 2>/dev/null | grep -q "$ID"; then
-  echo "    (the signing key in $SIGN is not usable on this Mac: signing ad-hoc instead; macOS may ask for permissions again)"
-  ID=""
+# codesign finds the key only in a keychain on the user's search list (macOS 26): added once, the others kept
+if [ -n "$ID" ] && ! security list-keychains -d user | grep -q "$KC"; then
+  security list-keychains -d user -s $(security list-keychains -d user | tr -d '"') "$KC"
 fi
-if [ -n "$ID" ]; then
+# a keychain copied from another Mac lists the identity but cannot sign: ad-hoc then, rather than no build
+if [ -n "$ID" ] && codesign --force --deep -s "$ID" --keychain "$KC" "$APP" 2>/dev/null; then
   echo "==> codesign (this Mac's key)"
-  codesign --force --deep -s "$ID" --keychain "$KC" "$APP"
+elif [ -n "$ID" ]; then
+  echo "    (the signing key in $SIGN does not sign on this Mac: ad-hoc instead; macOS will ask for permissions again)"
+  echo "==> codesign (ad-hoc)"
+  codesign --force --deep -s - "$APP"
 else
   echo "==> codesign (ad-hoc)"
   codesign --force --deep -s - "$APP"

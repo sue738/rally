@@ -611,7 +611,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         }
         var env = ProcessInfo.processInfo.environment
         let login = env["SHELL"] ?? ""
-        let sh = (login.hasSuffix("/zsh") || login.hasSuffix("/bash")) && FileManager.default.isExecutableFile(atPath: login) ? login : "/bin/zsh"
+        let sh = userShell(login)
         let p = Process()
         p.launchPath = sh
         // The shell prints where `cd` left it. Newlines, not `;`: a typed `#` would comment out the rest.
@@ -1009,7 +1009,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             guard id.range(of: "^[A-Za-z0-9_-]{1,40}$", options: .regularExpression) != nil else { return }
             let env = ProcessInfo.processInfo.environment
             let login = env["SHELL"] ?? ""
-            let sh = (login.hasSuffix("/zsh") || login.hasSuffix("/bash")) && FileManager.default.isExecutableFile(atPath: login) ? login : "/bin/zsh"
+            let sh = userShell(login)
             let kind = (body["kind"] as? String) ?? "", session = (body["session"] as? String) ?? "", mode = (body["mode"] as? String) ?? ""
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             let cwd = (body["cwd"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? home
@@ -1495,6 +1495,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 // and each would take itself for that session's child (transcript not saved). Dropped at launch.
 for k in ProcessInfo.processInfo.environment.keys where k == "CLAUDECODE" || k.hasPrefix("CLAUDE_CODE_") || k == "CLAUDE_JOB_DIR" || k.hasPrefix("CLAUDE_SESSION") { unsetenv(k) }
 // …and its BROWSER=true, which makes every "open in the browser" do nothing
+/// The shell for the app's terminals: the login shell (zsh or bash), except that a login shell of bash with a ~/.zshrc
+/// (a Mac set up with bash for its user while the person's own setup is zsh) runs zsh, so the terminals have their prompt,
+/// completion and aliases
+func userShell(_ login: String) -> String {
+    let fm = FileManager.default
+    let home = fm.homeDirectoryForCurrentUser.path
+    if login.hasSuffix("/bash"), fm.fileExists(atPath: home + "/.zshrc"), fm.isExecutableFile(atPath: "/bin/zsh") { return "/bin/zsh" }
+    return (login.hasSuffix("/zsh") || login.hasSuffix("/bash")) && fm.isExecutableFile(atPath: login) ? login : "/bin/zsh"
+}
 if ProcessInfo.processInfo.environment["BROWSER"] == "true" { unsetenv("BROWSER") }
 // ~/.agentkanban becomes ~/.rally before anything reads either (DataDir.swift)
 DataDir.migrate()
