@@ -68,3 +68,16 @@
 #mmeta select,#mmeta input[type=text]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;padding:5px 9px;width:100%;transition:border-color .12s ease,box-shadow .12s ease}
 #mmeta input[type=text]:focus{outline:none;border-color:color-mix(in srgb,var(--info) 70%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--info) 18%,transparent)}
 
+
+/* a message you sent says where it is, on the bubble: sending (spinner) → sent (✓) → in the record (the bubble becomes the turn) */
+.hist .turn.user[data-st] .who{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.hist .turn.user[data-st="sending"] .who::before{content:'';width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:echospin .8s linear infinite}
+.hist .turn.user[data-st="sent"] .who{color:var(--ok)}
+.hist .turn.user[data-st="sent"] .who::before{content:'✓'}
+.hist .turn.user[data-st="queued"] .who{color:var(--warn,var(--dim))}
+.hist .turn.user[data-st="queued"] .who::before{content:'⏳'}
+.hist .turn.user[data-st="error"] .who{color:var(--bad)}
+.hist .turn.user[data-st="error"] .who::before{content:'!'}
+.hist .turn.pending[data-st="sending"]{opacity:.8}
+@keyframes echospin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.hist .turn.user[data-st="sending"] .who::before{animation:none}}
