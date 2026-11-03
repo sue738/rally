@@ -72,3 +72,12 @@ header #pendall.on,header #new.on{color:var(--fg);background:var(--hover)}
 
 /* an HTML file, shown as the page (87-viewer.js) */
 .vbody iframe.vhtml{display:block;width:100%;height:calc(100% - 28px);min-height:60vh;border:0;border-radius:8px;background:#fff}
+
+/* 編集 (87-viewer.js): the file's text in a box the height of the window */
+#viewer .vbody.editing{display:flex;flex-direction:column;overflow:hidden;padding-bottom:12px}
+#viewer .vta{flex:1;min-height:0;width:100%;box-sizing:border-box;resize:none;font-family:var(--mono);font-size:var(--fs-small);line-height:1.55;tab-size:2;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;outline:none}
+#viewer .vta:focus{border-color:color-mix(in srgb,var(--info) 60%,var(--line))}
+#viewer .vebar{display:flex;align-items:center;gap:8px;padding-top:10px;font-family:var(--mono);font-size:var(--fs-small)}
+#viewer .vemsg{color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#viewer .vemsg.bad{color:var(--bad)}
+#viewer .vebar .vesave{background:var(--info);color:var(--bg);border-radius:999px;padding:4px 14px}
+#viewer .vebar .vesave:hover{background:var(--info);color:var(--bg);filter:brightness(1.08)}

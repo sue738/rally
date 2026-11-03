@@ -91,7 +91,7 @@ function runPage(saved = {}) {
   };
   const names = Object.keys(scope);
   // `return` the page's own functions so they can be called from here.
-  const body = src + '\n;return {ptyInputHas, mdRender, sentEchoes, echoRestore, yourOrderSet, effortDefault, yourSorted: () => yourSort(live.cards), laneLocalSet, live: () => live, dlgParse, dlgSeen, askHtml, ptyFixKind, toggleNew, syncPanelBtns, openFirstPanel: () => { openedFirst = false; openFirst(); }, histReconcile, thinkState, palItems, unreadReplies, unreadChip, seenBaseline, seenMapRef: () => seenMap, seenARef: () => seenA, echoTyped, unreadFromOf, isUnread, unreadShown, markSeen, unreadCount, unreadAllRead, seenBase: () => seenBase, histAsk, histPut, histCache, histTouch, clock, matchQuery, searchSuggest, flash, copyId, wfHeldOf, wfLocal, wfSend, wfBusy, moreChips, etaLabel, etaChip, etaSettle, etaTaskChip, prHtml, hist: document.querySelector(\'#mhist\'), body: () => document.querySelector(\'#mbody\'), openDetail, openNew, openPendingAll, pendCounts, wipStart, jobsHtml, whenNext, renderHistory, applyState, render, reasonJa, applyTheme, pendLine, echoSent, sentEchoes, cardSig, thinkState, resumeCell, fuzzy, openPalette, closePalette, arrivals, stuckText, kidsPlan, mdRender, diffRender, diffLines, reviewMessage, openChanges, notesOf, sendNotes, noteHere, renderChangesFor: (j) => window.__kanban.changes(j), linkify, askHtml, qAnswers, qPick, permAnswer, modelVer, famVersions, autoHue, topicKey, parseQuery, matchQuery, flipDeltas, prArrived, prNumOf, qerrText, notifyBar, PAL_ACTIONS, clicks: document.clicks, prMergeable, prFinish, prFinished, prDone, wtHtml, wtNote, wtPost, pendAct, dispatch, pendingToasts, dispatched: (r) => window.__kanban.dispatched(r), newState: () => newRun, pendingNewOf: () => pendingNew, panel: () => panelKey, togglePanel, closeDetail, sel: () => sel, setSel: (k) => { sel = k; }, openFor: () => openFor, boardView: () => boardView, setView, VIEWS, cshow, setCardShow, CARD_FIELDS, CHIP_FIELDS, chipOrder, setCardOrder, orderedChips, cardShowOpen, ptys, ptyEnded, kanban: window.__kanban, sentEchoes, panelView: () => panelView, panelPrefSet, ptyUnpark, setFn: (n, f) => { eval(n + \' = f\'); }, bgNote, bgPopOpen, bgStopTasks, bgPopRefresh, win: window, mountPanelTerm, takeoverWhy, KM_DEFS, KM_GROUPS, KM_PRESETS, kmCanon, kmAct, kmBad, kmSet, kmReset, kmResetAll, kmPreset, kmPresetNow, kmLoad, kmParse, kmKey, kmL, kmLabel, kmText, kmOver: () => kmOver, SHORTCUTS, drawHelp, openKeys, keyDraw, kmCapKey, keyCap: () => keyCap, setKeyCap: (v) => { keyCap = v; }};';
+  const body = src + '\n;return {ptyInputHas, mdRender, sentEchoes, echoRestore, yourOrderSet, effortDefault, yourSorted: () => yourSort(live.cards), laneLocalSet, live: () => live, dlgParse, dlgSeen, askHtml, ptyFixKind, toggleNew, syncPanelBtns, openFirstPanel: () => { openedFirst = false; openFirst(); }, histReconcile, thinkState, palItems, unreadReplies, unreadChip, seenBaseline, seenMapRef: () => seenMap, seenARef: () => seenA, echoTyped, unreadFromOf, isUnread, unreadShown, markSeen, unreadCount, unreadAllRead, seenBase: () => seenBase, histAsk, histPut, histCache, histTouch, clock, matchQuery, searchSuggest, flash, copyId, wfHeldOf, wfLocal, wfSend, wfBusy, moreChips, etaLabel, etaChip, etaSettle, etaTaskChip, prHtml, hist: document.querySelector(\'#mhist\'), body: () => document.querySelector(\'#mbody\'), openDetail, openNew, openPendingAll, pendCounts, wipStart, jobsHtml, whenNext, renderHistory, applyState, render, reasonJa, applyTheme, pendLine, echoSent, sentEchoes, cardSig, thinkState, resumeCell, fuzzy, openPalette, closePalette, arrivals, stuckText, kidsPlan, mdRender, diffRender, diffLines, reviewMessage, openChanges, notesOf, sendNotes, noteHere, renderChangesFor: (j) => window.__kanban.changes(j), linkify, askHtml, qAnswers, qPick, permAnswer, modelVer, famVersions, autoHue, topicKey, parseQuery, matchQuery, flipDeltas, prArrived, prNumOf, qerrText, notifyBar, PAL_ACTIONS, clicks: document.clicks, prMergeable, prFinish, prFinished, prDone, wtHtml, wtNote, wtPost, pendAct, dispatch, pendingToasts, dispatched: (r) => window.__kanban.dispatched(r), newState: () => newRun, pendingNewOf: () => pendingNew, panel: () => panelKey, togglePanel, closeDetail, sel: () => sel, setSel: (k) => { sel = k; }, openFor: () => openFor, boardView: () => boardView, setView, VIEWS, cshow, setCardShow, CARD_FIELDS, CHIP_FIELDS, chipOrder, setCardOrder, orderedChips, cardShowOpen, ptys, ptyEnded, kanban: window.__kanban, sentEchoes, panelView: () => panelView, panelPrefSet, ptyUnpark, setFn: (n, f) => { eval(n + \' = f\'); }, bgNote, bgPopOpen, bgStopTasks, bgPopRefresh, win: window, mountPanelTerm, takeoverWhy, KM_DEFS, KM_GROUPS, KM_PRESETS, kmCanon, kmAct, kmBad, kmSet, kmReset, kmResetAll, kmPreset, kmPresetNow, kmLoad, kmParse, kmKey, kmL, kmLabel, kmText, kmOver: () => kmOver, SHORTCUTS, drawHelp, openKeys, keyDraw, kmCapKey, keyCap: () => keyCap, setKeyCap: (v) => { keyCap = v; }, openViewer, viewEdit, viewSave, viewEditable, viewerNow: () => viewer};';
   const fn = new Function(...names, body);
   // a key press as the board's own listeners get it, in the order they were added
   const key = (k) => {
@@ -424,6 +424,38 @@ if (api) {
         m === "変更へのレビューコメントです。\n- lib/a.js:12 `const x = 'y';` — ここは let で\n- b.md:3(削除行) `old` — 戻して\n  理由も");
     }
   } catch (e) { ok(`viewer — ${e.message}`, false); }
+  try {
+    // 編集: a text file opened in the viewer is edited there and ⌘S saves it through api/save
+    const vp = runPage();
+    const press = (o) => { const e = { key: '', metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, target: vp.document.body, preventDefault() { this.dp = true; }, stopPropagation() {}, stopImmediatePropagation() { this.stopped = true; }, ...o }; for (const f of vp.document.listeners.keydown || []) { if (e.stopped) break; f(e); } return e; };
+    const fp = '/Users/me/.claude/settings.json';
+    vp.openViewer(fp);
+    const shell = vp.document.body.children[vp.document.body.children.length - 1];
+    vp.kanban.viewed({ path: fp, name: 'settings.json', kind: 'text', text: '{"a": 1}\n', size: 9, mtime: 1730000000123.456 });
+    ok('★ edit: the viewer bar has 編集, offered for whole text files only', /class="vedit"[^>]*>編集</.test(shell.innerHTML) && vp.viewEditable(vp.viewerNow().data)
+      && !vp.viewEditable({ kind: 'text', text: 'x', truncated: true }) && !vp.viewEditable({ kind: 'image', data: 'x' }) && !vp.viewEditable({ kind: 'binary' }));
+    press({ key: 'e' });
+    const ed = vp.viewerNow().edit;
+    ok('★ edit: e opens a box holding the file\'s text', !!ed && ed.ta.value === '{"a": 1}\n' && !ed.armed && !ed.saving);
+    ed.ta.value = '{"a": 2}\n';
+    const k1 = press({ key: '1', target: ed.ta }), kq = press({ key: 'q', target: ed.ta });
+    ok('★ edit: typing in the box fires no viewer key (q does not close it)', !!vp.viewerNow() && !!vp.viewerNow().edit && k1.stopped && kq.stopped && !kq.dp);
+    const e1 = press({ key: 'Escape', target: ed.ta });
+    ok('★ edit: Esc with changes asks inline for a second Esc, and keeps the text', e1.dp && !!vp.viewerNow().edit && ed.armed && /もう一度 Esc/.test(ed.msg.textContent) && ed.ta.value === '{"a": 2}\n');
+    ed.ta.oninput();
+    const s1 = press({ key: 's', metaKey: true, target: ed.ta });
+    const sv = vp.fetched.find((f) => f[0] === 'api/save');
+    const sb = sv ? JSON.parse(sv[1].body) : {};
+    ok('★ edit: ⌘S posts the path, the text and the mtime it was read at to api/save', s1.dp && sv && sv[1].method === 'POST' && sb.path === fp && sb.text === '{"a": 2}\n' && sb.mtime === 1730000000123.456);
+    vp.kanban.saved({ path: fp, error: 'JSON として読めないので保存しません(1 行 9 文字目)' });
+    ok('★ edit: a refused save keeps the text and says why', !!vp.viewerNow().edit && ed.ta.value === '{"a": 2}\n' && /JSON/.test(ed.msg.textContent) && !ed.saving);
+    vp.viewSave();
+    vp.kanban.saved({ path: fp, name: 'settings.json', kind: 'text', text: '{"a": 2}\n', size: 9, mtime: 1730000000999 });
+    ok('★ edit: saved, the viewer leaves the box and shows the file as it is now', !vp.viewerNow().edit && vp.viewerNow().data.mtime === 1730000000999 && vp.viewerNow().tab === 'source');
+    vp.viewEdit(); vp.viewerNow().edit.ta.value = 'x';
+    press({ key: 'Escape' }); press({ key: 'Escape' });
+    ok('edit: a second Esc throws the changes away, the viewer stays open', !!vp.viewerNow() && !vp.viewerNow().edit && vp.viewerNow().data.text === '{"a": 2}\n');
+  } catch (e) { ok('edit in the viewer — ' + e.stack.split('\n').slice(0, 3).join(' | '), false); }
   try {
     const v = (id) => { const x = api.modelVer(id); return x ? x.fam + ' ' + x.ver : null; };
     ok('★ model versions: opus 5.5, sonnet 5, haiku 4.5 (date stripped), fable 5.1, old claude-3-5-sonnet', v('claude-opus-5-5') === 'opus 5.5' && v('claude-sonnet-5') === 'sonnet 5' && v('claude-haiku-4-5-20251001') === 'haiku 4.5' && v('claude-fable-5-1') === 'fable 5.1' && v('claude-3-5-sonnet-20241022') === 'sonnet 3.5' && v('gpt-5.6-terra') === null);
@@ -1519,9 +1551,10 @@ console.log('== today\'s features, by what they do ==');
       api.setFn('panelSlash', (c, cmd, f) => { slashed.push(cmd); if (f) f(true); return true; });
       api.openDetail(wfc); box().value = '!ls -la'; enter(box());
       box().value = '/compact'; enter(box());
+      box().value = '! brew list'; enter(box());
       const held = api.fetched.filter((x) => x[0] === 'api/reply' || x[0] === 'api/queue').map((x) => String(x[1] && x[1].body));
-      ok('★ 今の作業後に送る: a !command and a /command go to the terminal at once, never held as words',
-        slashed.join('|') === '!ls -la|/compact' && !held.some((b) => /ls -la|compact/.test(b)));
+      ok('★ 今の作業後に送る: a !command (also `! cmd` with a space) and a /command go to the terminal at once, never held or sent as words',
+        slashed.join('|') === '!ls -la|/compact|!brew list' && !held.some((b) => /ls -la|compact|brew list/.test(b)));
     }
     {
       // 新規: refused, then reloaded: the ask is back

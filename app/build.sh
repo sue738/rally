@@ -80,6 +80,11 @@ if [ -n "$SIGN" ] && [ -f "$KC" ] && [ -f "$SIGN/pass" ]; then
   security unlock-keychain -p "$(cat "$SIGN/pass")" "$KC" 2>/dev/null &&
     ID=$(security find-identity "$KC" 2>/dev/null | awk '/AgentKanban Local Signing/{print $2; exit}')
 fi
+# the key must also be usable here: a keychain copied from another Mac lists the identity without its private key
+if [ -n "$ID" ] && ! security find-identity -v "$KC" 2>/dev/null | grep -q "$ID"; then
+  echo "    (the signing key in $SIGN is not usable on this Mac: signing ad-hoc instead; macOS may ask for permissions again)"
+  ID=""
+fi
 if [ -n "$ID" ]; then
   echo "==> codesign (this Mac's key)"
   codesign --force --deep -s "$ID" --keychain "$KC" "$APP"

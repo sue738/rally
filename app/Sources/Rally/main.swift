@@ -521,14 +521,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         return runNode(args, timeout: timeout)
     }
 
-    func runNode(_ args: [String], timeout: TimeInterval = 60) -> (String, Int32) {
+    func runNode(_ args: [String], timeout: TimeInterval = 60, stdin: Data? = nil) -> (String, Int32) {
         let started = Date()
         defer {
             let ms = Int(Date().timeIntervalSince(started) * 1000)
             if ms >= 1500 || !["state", "history", "pr"].contains(args.first ?? "") { logLine(["ev": "node", "cmd": args.first ?? "", "ms": ms]) }
         }
         guard let node = node, let script = script else { return ("node or rally.js not found", -1) }
-        let r = Self.runProcess(node, [script] + args, timeout: timeout)
+        let r = Self.runProcess(node, [script] + args, timeout: timeout, stdin: stdin)
         if r.timedOut {
             logLine(["ev": "node-timeout", "cmd": args.first ?? "", "s": Int(timeout)])
             return (L("\(Int(timeout))秒で応答がないので止めました", "Stopped: no answer in \(Int(timeout)) seconds"), -1)
@@ -538,12 +538,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     /// Both pipes are drained at once, or a child filling stderr (64KB) blocks and so does the app.
-    /// A child that never exits is terminated, then killed.
-    static func runProcess(_ exe: String, _ args: [String], timeout: TimeInterval) -> (out: String, err: String, code: Int32, timedOut: Bool) {
+    /// A child that never exits is terminated, then killed. `stdin`, if given, is written to it and closed.
+    static func runProcess(_ exe: String, _ args: [String], timeout: TimeInterval, stdin: Data? = nil) -> (out: String, err: String, code: Int32, timedOut: Bool) {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: exe)
         p.arguments = args
-        p.standardInput = FileHandle.nullDevice
+        let inPipe: Pipe? = stdin == nil ? nil : Pipe()
+        if let ip = inPipe { p.standardInput = ip } else { p.standardInput = FileHandle.nullDevice }
         let out = Pipe(), err = Pipe()
         p.standardOutput = out; p.standardError = err
         let exited = DispatchSemaphore(value: 0)
@@ -566,6 +567,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         do { try p.run() } catch {
             try? out.fileHandleForWriting.close(); try? err.fileHandleForWriting.close()
             return ("", error.localizedDescription, -1, false)
+        }
+        if let ip = inPipe, let d = stdin {
+            // off this thread: a write larger than the pipe's buffer waits for the child to read it
+            let h = ip.fileHandleForWriting
+            _ = fcntl(h.fileDescriptor, F_SETNOSIGPIPE, 1)   // a child that exits early is no crash
+            DispatchQueue.global().async { try? h.write(contentsOf: d); try? h.close() }
         }
         var timedOut = false
         if exited.wait(timeout: .now() + timeout) == .timedOut {
@@ -867,6 +874,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 } else if let d = try? JSONSerialization.data(withJSONObject: ["path": path, "error": L("開けませんでした", "Could not open it")]),
                           let j = String(data: d, encoding: .utf8) {
                     self.call("window.__kanban.viewed(\(j))")
+                }
+            }
+        case "save":
+            // an edit made in the viewer: the text goes on stdin (no argument limit, no NFD), view.js checks the file
+            let path = (body["path"] as? String) ?? "", text = (body["text"] as? String) ?? ""
+            let mtime = (body["mtime"] as? Double).map { "\($0)" } ?? ""   // a Double prints back exactly
+            filesQueue.async {
+                let (out, code) = self.runNode(["save", "--cwd", path, "--mtime", mtime], stdin: Data(text.utf8))
+                if code == 0, (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil {
+                    self.call("window.__kanban.saved(\(out))")
+                } else if let d = try? JSONSerialization.data(withJSONObject: ["path": path, "error": L("保存できませんでした: ", "Could not save: ") + String(out.prefix(200))]),
+                          let j = String(data: d, encoding: .utf8) {
+                    self.call("window.__kanban.saved(\(j))")
                 }
             }
         case "files":

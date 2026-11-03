@@ -95,6 +95,7 @@ function parseArgs(argv) {
     else if (a === '--text') { const v = argv[++i]; o.text = typeof v === 'string' ? v.normalize('NFC') : v; }
     else if (a === '--session') o.session = argv[++i];
     else if (a === '--cwd') o.dirArg = argv[++i];
+    else if (a === '--mtime') o.mtime = argv[++i];
     else if (a === '--include') o.include = argv[++i];
     else if (a === '--drop') o.drop = argv[++i];
     else if (a === '--setup') o.setup = argv[++i];
@@ -399,6 +400,12 @@ async function main() {
   if (o.command === 'view') {
     // one shot for the app: one file for the viewer (text, picture, git diff)
     return process.stdout.write(Text.json(require('../lib/view.js').read(o.dirArg)));
+  }
+  if (o.command === 'save') {
+    // one shot for the app: an edit made in the viewer, its text on stdin (lib/view.js write checks it)
+    let text = null;
+    try { text = require('fs').readFileSync(0, 'utf8'); } catch (e) { /* no stdin: refused below */ }
+    return process.stdout.write(Text.json(require('../lib/view.js').write(o.dirArg, text, o.mtime)));
   }
   if (o.command === 'files') {
     // one shot for the app: the file names under a project, for `@` in the box

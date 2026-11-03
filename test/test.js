@@ -1815,6 +1815,30 @@ console.log('== view: one file for the viewer ==');
       ok('★ git: a repository\'s core.fsmonitor is not run by the viewer, the review or @', !fs.existsSync(mark));
       git('config', '--unset', 'core.fsmonitor');
     }
+    {
+      // 編集: saving an edit made in the viewer
+      const conf = path.join(root, 'conf'); fs.mkdirSync(conf);
+      const sj = path.join(conf, 'settings.json'); fs.writeFileSync(sj, '{"a": 1}\n'); fs.chmodSync(sj, 0o640);
+      const r0 = View.read(sj);
+      const w1 = View.write(sj, '{"a": 2}\n', r0.mtime);
+      ok('★ view.write: a text file under home is saved and read back fresh', !w1.error && w1.text === '{"a": 2}\n' && fs.readFileSync(sj, 'utf8') === '{"a": 2}\n' && w1.mtime === fs.statSync(sj).mtimeMs);
+      ok('★ view.write: replaced by a rename, its mode kept and no temporary file left', (fs.statSync(sj).mode & 0o777) === 0o640 && fs.readdirSync(conf).join() === 'settings.json');
+      fs.utimesSync(sj, new Date(1e12), new Date(1e12));
+      const w2 = View.write(sj, '{"a": 3}\n', w1.mtime);
+      ok('★ view.write: a file changed since it was read is not overwritten (reopen it)', /開き直して/.test(w2.error || '') && fs.readFileSync(sj, 'utf8') === '{"a": 2}\n');
+      const m2 = fs.statSync(sj).mtimeMs;
+      const w3 = View.write(sj, '{\n  "a": 3,\n}\n', m2);
+      ok('★ view.write: a JSON file is never saved broken, and the error says where', /JSON/.test(w3.error || '') && /3 行 1 文字目/.test(w3.error || '') && fs.readFileSync(sj, 'utf8') === '{"a": 2}\n');
+      ok('★ view.write: keys, files outside home, and what is not text are refused',
+        !!View.write(path.join(root, '.ssh', 'id_ed25519'), 'x', fs.statSync(path.join(root, '.ssh', 'id_ed25519')).mtimeMs).error && fs.readFileSync(path.join(root, '.ssh', 'id_ed25519'), 'utf8') === 'KEY'
+        && !!View.write(path.join(repo, '.env.local'), 'x', fs.statSync(path.join(repo, '.env.local')).mtimeMs).error
+        && !!View.write('/etc/hosts', 'x', fs.statSync('/etc/hosts').mtimeMs).error
+        && !!View.write(path.join(repo, 'b.bin'), 'x', fs.statSync(path.join(repo, 'b.bin')).mtimeMs).error
+        && !!View.write(path.join(repo, 'p.png'), 'x', fs.statSync(path.join(repo, 'p.png')).mtimeMs).error);
+      fs.symlinkSync(sj, path.join(root, 'link.json'));
+      const w4 = View.write(path.join(root, 'link.json'), '{"b": 1}\n', m2);
+      ok('view.write: through a symlink the file it points at is written, the link stays', !w4.error && fs.lstatSync(path.join(root, 'link.json')).isSymbolicLink() && fs.readFileSync(sj, 'utf8') === '{"b": 1}\n');
+    }
     // changes: what a session wrote or edited, as a review
     const Ch = require('../lib/changes.js');
     fs.writeFileSync(path.join(repo, 'done.md'), 'x\n'); git('add', 'done.md'); git('commit', '-qm', 'y');
