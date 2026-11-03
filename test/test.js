@@ -3669,7 +3669,7 @@ console.log('== board server ==');
       {
         const sendSrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'board', 'send.js'), 'utf8');
         ok('★ log review fixes: an ordinary send waits behind ordinary ones already held (order kept), and a resume right after a stop pauses and tries once more instead of leaving a forked copy for the queue',
-          /why: 'behind'/.test(sendSrc) && /if \(a\) Dispatch\.sleepMs\(1200\);/.test(sendSrc) && /r\.copy && !r\.unchecked && a\) \{ Dispatch\.sleepMs\(1500\); const r2 = resume\(\)/.test(sendSrc)
+          /why: 'behind'/.test(sendSrc) && /while \(pids\.some\(alive\) && Date\.now\(\) < until\) Dispatch\.sleepMs\(50\);/.test(sendSrc) && /r\.copy && !r\.unchecked && a\) \{ Dispatch\.sleepMs\(1500\); const r2 = resume\(\)/.test(sendSrc)
           && /"history", "pr"\]\.contains\(type\)/.test(appSwift()) && /app\.log\.1|f \+ "\.1"/.test(appSwift()) && /WORKER_MAX_MB'\) \|\| 1200/.test(fs.readFileSync(path.join(__dirname, '..', 'bin', 'rally.js'), 'utf8')));
         const dsrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'dispatch.js'), 'utf8');
         ok('★ codex: a send that meets the board\'s own codex exec still answering is held (sent when that turn ends), only an open codex elsewhere is refused',
