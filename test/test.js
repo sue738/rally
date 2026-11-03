@@ -3292,6 +3292,17 @@ console.log('== board server ==');
           const rh = Board.sendTo({ agent: 'claude', id: S2, text: 'あとで渡す', dir: tmp, whenFree: true });
           ok('★ 今の作業後に送る: no relay into a running conversation (the same send without it is relayed)',
             rr.relayed && rh.queued && rh.why === 'whenfree' && calls.length === 1 && calls[0].text === 'いま渡す');
+          {
+            // an idle background session that will not stop in time: relayed now, not held until its next idle
+            const S3 = '5e551011-0000-4000-8000-0000000000f3';
+            alive = new Map([[S1, bgBusy], [S2, { kind: 'interactive', status: 'busy', name: 'wf-two' }], [S3, { ...bgIdle, short: 's3', shorts: ['s3'], name: 'wf-three' }]]);
+            const before = calls.length, rs = Board.sendTo({ agent: 'claude', id: S3, text: 'すぐ渡す', dir: tmp });
+            ok('★ a session that does not stop in time gets the message relayed at once (it waited ~40s as 送信待ち)',
+              rs.relayed && calls.length === before + 1 && calls[before].how === 'relay' && calls[before].text === 'すぐ渡す');
+            Q.write(Q.read().filter((i) => i.id !== S3));
+            alive = new Map([[S1, bgBusy], [S2, { kind: 'interactive', status: 'busy', name: 'wf-two' }]]);
+            calls.length = 1;
+          }
           calls.length = 0;
           ok('★ drain: nothing goes while the session is busy',
             Q.drain(alive, drainOpts).sent.length === 0 && calls.length === 0 && Q.read().length === 3);
