@@ -7,12 +7,12 @@ import Carbon.HIToolbox
 import UserNotifications
 
 extension AppDelegate {
-    func notify(key: String, title: String, body: String, perm: String = "") {
+    func notify(key: String, title: String, body: String, perm: String = "", url: String = "") {
         let c = UNUserNotificationCenter.current()
         let post = {
             let n = UNMutableNotificationContent()
             n.title = title; n.body = body; n.sound = .default
-            n.userInfo = ["key": key, "perm": perm]
+            n.userInfo = ["key": key, "perm": perm, "url": url]
             if !perm.isEmpty { n.categoryIdentifier = "ak-perm" }
             // one notification per card: a newer one replaces it
             c.add(UNNotificationRequest(identifier: key.isEmpty ? UUID().uuidString : "ak-" + key, content: n, trigger: nil)) { err in
@@ -71,6 +71,8 @@ extension AppDelegate {
         let info = response.notification.request.content.userInfo
         let key = (info["key"] as? String) ?? ""
         let perm = (info["perm"] as? String) ?? ""
+        // a release (Update.swift): its page, not the board
+        if let u = Update.page(info["url"] as? String) { DispatchQueue.main.async { self.workspaceOpen(u); done() }; return }
         // Allow / Deny from the banner answers that request only (`perm --answer` refuses a stale one)
         if ["ak-allow", "ak-deny"].contains(response.actionIdentifier), perm.range(of: "^[0-9a-f]{32}$", options: .regularExpression) != nil {
             let decision = response.actionIdentifier == "ak-allow" ? "allow" : "deny"
