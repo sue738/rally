@@ -3149,7 +3149,7 @@ console.log('== board server ==');
       ok('★ a folded answer opens from anywhere — its rail is only two lines tall once folded',
         /if\(t\.classList\.contains\('folded'\)\)t\.classList\.remove\('folded'\)/.test(Board.PAGE)
         && /続きを表示/.test(Board.PAGE));
-      ok('★ Your Turn runs oldest first by default (worked top-down), newest first when chosen; permission and questions still on top', /rank\(x\)-rank\(y\)\|\|\(yourOrder==='new'\?\(y\.lastT\|\|0\)-\(x\.lastT\|\|0\):\(x\.lastT\|\|0\)-\(y\.lastT\|\|0\)\)/.test(Board.PAGE) && /return 'old'/.test(Board.PAGE));
+      ok('★ Your Turn runs oldest first by default (worked top-down), newest first when chosen; purely by time (a permission is not lifted to the top)', !/rank\(x\)-rank\(y\)/.test(Board.PAGE) && /\.sort\(\(x,y\)=>yourOrder==='new'\?\(y\.lastT\|\|0\)-\(x\.lastT\|\|0\):\(x\.lastT\|\|0\)-\(y\.lastT\|\|0\)\)/.test(Board.PAGE) && /return 'old'/.test(Board.PAGE));
       ok('★ an open answer folds from its left bar only (not a click on its body); a folded one opens from anywhere',
         /classList\.toggle\('folded'\)/.test(Board.PAGE) && /turn\.folded\{/.test(Board.PAGE)
         && /g\.className='fold'/.test(Board.PAGE) && /\.turn\.foldable \.fold\{/.test(Board.PAGE)

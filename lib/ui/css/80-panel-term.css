@@ -44,3 +44,7 @@ section.col.dropon{background:color-mix(in srgb,var(--info) 8%,transparent);box-
 .modemenu button.on b{color:var(--info)}
 .modemenu button .dim{font-size:var(--fs-meta)}
 
+/* a held permission prompt over the terminal (it is not on the terminal's screen); the conversation view has its own at the foot */
+#mtask{display:none}
+#mbody.pterm #mtask{display:block;margin:0 0 8px;max-height:45vh;overflow:auto}
+#mbody.pterm #mtask .awhat{max-height:120px}

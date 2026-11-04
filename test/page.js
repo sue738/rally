@@ -839,9 +839,9 @@ console.log('== every button is also a command ==');
     api.applyState({ cards: [mk('yo-a', 1000), mk('yo-b', 3000), mk('yo-c', 2000)], agents: [], hours: 24, collisions: [] });
     api.yourOrderSet('old'); const o1 = api.yourSorted().map((c) => c.id).join();
     api.yourOrderSet('new'); const o2 = api.yourSorted().map((c) => c.id).join();
-    api.applyState({ cards: [mk('yo-a', 1000), { ...mk('yo-r', 500), column: 'needs-you', reason: 'waiting for your reply (claude agents)' }, { ...mk('yo-p', 4000), column: 'approval', reason: 'waiting for permission: Bash' }, mk('yo-b', 3000)], agents: [], hours: 24, collisions: [] });
+    api.applyState({ cards: [mk('yo-a', 1000), { ...mk('yo-r', 500), column: 'needs-you', reason: 'waiting for your reply (claude agents)' }, { ...mk('yo-p', 2000), column: 'approval', reason: 'waiting for permission: Bash' }, mk('yo-b', 3000)], agents: [], hours: 24, collisions: [] });
     api.yourOrderSet('new'); const o3 = api.yourSorted().map((c) => c.id).join();
-    ok('★ Your Turn: a session idle at its prompt ("waiting for your reply") sorts with the answers; only a permission or question stays on top', o3 === 'yo-p,yo-b,yo-a,yo-r');
+    ok('★ Your Turn: purely by time — a permission prompt is not moved to the top (it was, above newer answers)', o3 === 'yo-b,yo-p,yo-a,yo-r');
     api.yourOrderSet('old');
     ok('★ Your Turn: the order can be flipped — oldest first (default) or newest first — and is kept', o1 === 'yo-a,yo-c,yo-b' && o2 === 'yo-b,yo-c,yo-a' && api.store.yourorder === 'old');
   } catch (e) { ok(`your order — ${e.message}`, false); }

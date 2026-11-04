@@ -74,7 +74,7 @@ Codex's allowance needs nothing: it is in Codex's own session logs.
 
 | lane | what is in it |
 |---|---|
-| **Your Turn** | waiting on you: a permission prompt or a question on top, then sessions that finished their turn, or where you spoke last and nothing followed |
+| **Your Turn** | waiting on you: a permission prompt or a question, a session that finished its turn, or one where you spoke last and nothing followed; in time order (the header flips oldest or newest first) |
 | **Waiting** | quiet for 6–24 hours. Not finished, just possibly forgotten |
 | **Working** | wrote within the last minute, has a subagent still running, or `claude agents` says it is busy |
 | **Completed** | sessions you marked done, anything quiet for over a day, one-shot and machine-started runs. Hidden until you turn on **Completed** in the header |
