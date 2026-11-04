@@ -151,6 +151,9 @@ on disk.
   stores), `claude agents --json`, and the rate limits Claude Code hands the status line (when set up above).
 - **Written:** Rally's own files under `~/.rally/` (backlog, queue, run logs,
   attachments, caches). An agent is only written to when you send, start or finish.
+- **Update check:** once a day the app asks GitHub for this repository's latest release
+  (`api.github.com/repos/sue738/rally/releases/latest`, with the app's version as its User-Agent). A newer one shows
+  in the Rally menu and as one notification; nothing is downloaded. `RALLY_NO_UPDATE_CHECK=1` turns it off.
 - Card titles and Leftovers are generated with your own `claude` CLI and count toward your
   usage (`RALLY_NO_ENRICH=1` turns titles off).
 

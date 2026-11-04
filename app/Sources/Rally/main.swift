@@ -105,6 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         NSApp.setActivationPolicy(selftestHidden ? .accessory : .regular)
         if selftesting { armSelftestWatchdog() }
         buildMenu()
+        startUpdateCheck()
         logLine(["ev": "datadir", "migrate": DataDir.result])
         watchActive()
         // RALLY_SELFTEST_SIZE=390x844 renders the page at phone width (the narrow layout).
