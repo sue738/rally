@@ -546,6 +546,10 @@ console.log('== board columns (lib/board/columns.js, what state.js lays over liv
     const qs = [{ question: 'Which?', options: [] }];
     S.placeAsks(qc, [{ id: 'c1', session: 'q', tool: 'AskUserQuestion', what: 'Which?', t: now, questions: qs }], now, () => {});
     ok('columns: placeAsks — a question carries its questions and says so', qc[0].permAsk.questions === qs && qc[0].reason === 'asked you a question (AskUserQuestion)');
+    const pk = [{ agent: 'claude', id: 'r', subagent: false, column: 'stale', reason: 'あなたが待ちにしました', parked: { lane: 'stale' }, lastT: now, pending: [] }];
+    S.placeAsks(pk, [{ id: 'd1', session: 'r', agent: 'k2', tool: 'Bash', what: 'mkdir x', t: now }], now, () => {});
+    ok('★ columns: placeAsks — a card set aside that is asked for a permission says so (it read 許可 · あなたが待ちにしました)',
+      pk[0].column === 'approval' && pk[0].reason === 'waiting for permission: Bash' && !pk[0].parked);
   }
   // 棚卸し candidates
   ok('columns: wipEligible — yours, claude or codex, not read, not closed, not writing',
