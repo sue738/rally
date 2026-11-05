@@ -53,7 +53,7 @@ js_scenarios() {
     24-newsession.js)                                       echo "new yaynew agynew";;
     39-board.js|00-core.js|42-state.js|48-bridge.js)        echo "view detail covered listdock kbd";;
     43-askpop.js)                                            echo "askpop askwire askq";;
-    51-strip.js|54-pty.js|57-panel-term.js|60-pty-park.js)  echo "term pty panelterm ptycache split close termui termask";;
+    51-strip.js|54-pty.js|57-panel-term.js|60-pty-park.js)  echo "term pty panelterm ptycache split close termui termask inputbox";;
     75-keys.js|01-keymap.js|90-help.js|92-keyset.js)        echo "kbd keys keybind qmark";;
     78-boot.js|81-palette.js)                               echo "views controls covered";;
     *)                                                      echo "view detail covered";;
