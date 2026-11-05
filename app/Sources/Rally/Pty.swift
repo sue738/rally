@@ -352,6 +352,12 @@ final class PtyHost {
         msg(["op": "size", "id": id, "cols": cols, "rows": rows, "redraw": redraw])
     }
 
+    /// The page is behind drawing a tab, or has caught up (PtyServer.hold). A host older than this ignores it.
+    func hold(id: String, on: Bool) {
+        if let l = local { l.hold(id: id, on); return }
+        msg(["op": "hold", "id": id, "on": on])
+    }
+
     func close(id: String) {
         if let l = local { l.close(id: id); return }
         msg(["op": "close", "id": id])

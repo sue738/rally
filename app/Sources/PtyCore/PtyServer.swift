@@ -25,6 +25,11 @@ public final class PtyServer {
         /// bytes handed to onData not yet reported by sent(), and whether reading is paused
         var unsent = 0
         var paused = false
+        /// the page has more than it can draw (hold()); `holdGen` lets only the latest hold expire it
+        var held = false
+        var holdGen = 0
+        /// whether `source` is suspended now: paused or held, kept to one suspend per resume
+        var suspended = false
         init(id: String, pid: pid_t, fd: Int32, meta: String, cols: Int, rows: Int) { self.id = id; self.pid = pid; self.fd = fd; self.meta = meta; self.cols = cols; self.rows = rows }
     }
     public static let RING_MAX = 1 << 20
@@ -114,7 +119,34 @@ public final class PtyServer {
         }
         if ended { finish(tab); return }
         if let lim = flowLimit, !tab.paused, tab.unsent + tab.pending.count > lim {
-            tab.paused = true; tab.source?.suspend()
+            tab.paused = true; reading(tab)
+        }
+    }
+
+    /// Suspends or resumes the tab's read source to match paused/held (on the pty queue).
+    private func reading(_ tab: Tab) {
+        let stop = tab.paused || tab.held
+        guard stop != tab.suspended, !tab.closed, let s = tab.source else { return }
+        if stop { s.suspend() } else { s.resume() }
+        tab.suspended = stop
+    }
+
+    /// How long one hold() lasts unless renewed: a page that reloads or dies mid-hold does not stop a tab for good.
+    public static let holdMax: TimeInterval = 3
+
+    /// The page is behind drawing this tab (on) or has caught up (off). While held the tab isn't read, so the
+    /// program blocks on write instead of the page's terminal queueing past what it can take (and dropping it).
+    public func hold(id: String, _ on: Bool) {
+        guard let tab = tab(id) else { return }
+        io.async {
+            tab.holdGen += 1
+            let g = tab.holdGen
+            tab.held = on; self.reading(tab)
+            guard on else { return }
+            self.io.asyncAfter(deadline: .now() + Self.holdMax) { [weak self] in
+                guard tab.holdGen == g, tab.held else { return }
+                tab.held = false; self?.reading(tab)
+            }
         }
     }
 
@@ -124,7 +156,7 @@ public final class PtyServer {
         io.async {
             tab.unsent = max(0, tab.unsent - bytes)
             if tab.paused && !tab.closed && tab.unsent + tab.pending.count <= lim / 4 {
-                tab.paused = false; tab.source?.resume()
+                tab.paused = false; self.reading(tab)
             }
         }
     }
@@ -195,7 +227,7 @@ public final class PtyServer {
     public func close(id: String) {
         guard let tab = tab(id) else { return }
         // by pid only before finish() reaps it: after that the pid may be reused
-        io.async { if !tab.closed { kill(tab.pid, SIGHUP) } }
+        io.async { if !tab.closed { tab.held = false; self.reading(tab); kill(tab.pid, SIGHUP) } }
         io.asyncAfter(deadline: .now() + 2) { if !tab.closed && kill(tab.pid, 0) == 0 { kill(tab.pid, SIGKILL) } }
     }
 
@@ -229,7 +261,7 @@ public final class PtyServer {
             tab.pending.removeAll(keepingCapacity: true)
             // pending bytes never reach onData now, so no sent() will resume a tab paused on them
             if let lim = self.flowLimit, tab.paused, !tab.closed, tab.unsent <= lim / 4 {
-                tab.paused = false; tab.source?.resume()
+                tab.paused = false; self.reading(tab)
             }
             let first = tab.total - tab.ring.count
             var start = first

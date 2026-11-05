@@ -813,7 +813,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     func handle(_ body: [String: Any], type: String) {
         // what you pressed, not the terminals' traffic (per-key/resize lines would flood the capped log)
         // nor the panel's own polls (history, pr every few seconds): they were most of the log and pushed a week out in 12 hours
-        if !["state", "badge", "ptyin", "ptysize", "ptymeta", "selftestsample", "history", "pr"].contains(type) {
+        if !["state", "badge", "ptyin", "ptyhold", "ptysize", "ptymeta", "selftestsample", "history", "pr"].contains(type) {
             logLine(["ev": "page", "type": type,
                      "session": (body["session"] as? String)?.prefix(8).description ?? "",
                      "agent": body["agent"] as? String ?? "",
@@ -1150,6 +1150,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             }
         case "ptyin":
             pty.write(id: (body["id"] as? String) ?? "", data: (body["data"] as? String) ?? "")
+        case "ptyhold":
+            pty.hold(id: (body["id"] as? String) ?? "", on: (body["on"] as? Bool) == true)
         case "ptysize":
             pty.resize(id: (body["id"] as? String) ?? "", cols: (body["cols"] as? Int) ?? 0, rows: (body["rows"] as? Int) ?? 0)
         case "ptyclose":

@@ -126,6 +126,8 @@ func handle(_ m: [String: Any]) {
         emit(["ev": "closedall"])
     case "meta":
         server.setMeta(id: id, meta: (m["meta"] as? String) ?? "")
+    case "hold":
+        server.hold(id: id, (m["on"] as? Bool) == true)
     case "replay":
         if let r = server.replayUpTo(id: id) { replayedTo[id] = r.upTo; emit(["ev": "data", "id": id, "b64": r.data.base64EncodedString(), "replay": true]) }
         else { emit(["ev": "exit", "id": id, "code": -1]) }
