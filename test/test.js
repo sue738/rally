@@ -1167,7 +1167,7 @@ console.log('== lanes from the process and from subagents ==');
     // security: what the audit found stays closed
     const V = require('../lib/view.js');
     ok('★ view: gh / claude / codex credentials and the board token are never shown', ['/.config/gh/hosts.yml', '/.claude/.credentials.json', '/.codex/auth.json', '/.agentkanban/token', '/.rally/token'].every((p) => V.SECRET.test(os.homedir() + p)) && !V.SECRET.test(os.homedir() + '/private/x/README.md'));
-    ok('★ relay: the carrier gets only ListAgents and SendMessage', /'--tools', 'ListAgents,SendMessage'/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'relay.js'), 'utf8')));
+    ok('★ relay: the carrier gets only ListAgents and SendMessage (only SendMessage when it has the address)', /'--tools', address \? 'SendMessage' : 'ListAgents,SendMessage'/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'relay.js'), 'utf8')));
     ok('★ notification 許可 only when the banner shows the whole request', /length<=120&&!c\.permAsk\.more\?c\.permAsk\.id:''/.test(uiScript()));
     // started now, collected later: argv reaches the command whole (a shift too many once dropped the binary,
     // so every `claude agents` read as unknown and the board looked faster for it)
@@ -3217,6 +3217,18 @@ console.log('== board server ==');
             && /宛先: me-af/.test(pr) && /これやって/.test(pr));
           ok('★ the relayed words say they are yours, inside what is sent verbatim, and grant nothing',
             /\n<<<AK-[0-9a-f]{24}\n/.test(pr) && pr.indexOf(R.VOICE + '\n\nこれやって\nAK-') !== -1 && /ユーザー本人/.test(R.VOICE) && /承認にはなりません/.test(R.VOICE));
+          {
+            // by its socket: no ListAgents, so a session not listed yet (just resumed) or one sharing its name is still reached
+            const net = require('net');const sd = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-socks-'));
+            const srv = net.createServer().listen(path.join(sd, '4242.sock'));
+            const was = process.env.RALLY_PEER_SOCKS;process.env.RALLY_PEER_SOCKS = sd;
+            const pa = R.promptFor('go on', 'x', 'sid', null, 'uds:' + path.join(sd, '4242.sock'));
+            ok('★ relay: a live session is reached at its own socket, without looking it up by name (it waited ~80 s as 送信待ち when the name was not listed yet)',
+              R.addressOf(4242) === 'uds:' + path.join(sd, '4242.sock') && R.addressOf(4243) === null && R.addressOf(null) === null
+              && /ListAgents で探さない/.test(pa) && !/AMBIGUOUS/.test(pa) && pa.includes('uds:' + path.join(sd, '4242.sock'))
+              && /Relay\.addressOf\(a\.pid\)/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'board', 'send.js'), 'utf8')));
+            srv.close();if (was == null) delete process.env.RALLY_PEER_SOCKS; else process.env.RALLY_PEER_SOCKS = was;fs.rmSync(sd, { recursive: true, force: true });
+          }
           let refused = '';
           try { R.relay({ name: '', text: 'x' }); } catch (e) { refused = e.message; }
           ok('with no name there is nobody to hand it to', /宛先/.test(refused));
