@@ -13,6 +13,10 @@ try{
   panelView='talk';openDetail(c,false,{focus:false,view:'talk'});await wait(()=>$('#mbody .msg textarea'),8000);
   const t=$('#mbody .msg textarea');t.value='!echo BANGOK';t.dispatchEvent(new Event('input'));
   t.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+  // it shows at once as sent, not nowhere until the record has it
+  await wait(()=>typed.includes('!')||[...document.querySelectorAll('#mhist .turn.user')].filter(e=>e._echo).length,15000).catch(()=>{});
+  out.echo=[...document.querySelectorAll('#mhist .turn.user')].filter(e=>e._echo).map(e=>e.textContent.slice(0,60));
+  expect('the command shows in the conversation as sent',out.echo.some(x=>/! echo BANGOK/.test(x)));
   await wait(()=>typed.some(x=>/echo BANGOK/.test(x)),15000).catch(()=>{});await sleep(300);
   out.sent=sent.map(m=>m.type);out.typed=typed.slice(0,4);
   expect('a ! message is not sent as words',!sent.length);
