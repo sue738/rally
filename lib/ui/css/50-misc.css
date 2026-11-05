@@ -201,3 +201,4 @@ header #jobsbtn.on{color:var(--fg);background:var(--hover)}
 .rnum{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .nrecipes button{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;border-radius:10px;padding:4px 10px}
 .nrecipes .rtrack{width:80px;height:5px}
+.turn .md li.task{list-style:none;margin-left:-1.2em}.turn .md .cb.on{color:var(--ok)}

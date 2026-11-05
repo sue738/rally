@@ -394,6 +394,10 @@ if (api) {
     ok('★ viewer: markdown never lets a tag through, and links are https only',
       !/<img|<script|<i>|javascript:"|href="javascript/.test(h) && h.includes('<h1>') && h.includes('<table>') && h.includes('href="https://e.com"'));
     ok('viewer: a soft newline is a space, and nothing between Japanese', api.mdRender('a\nb').includes('<p>a b</p>') && api.mdRender('日本\n語').includes('<p>日本語</p>'));
+    ok('★ viewer: a numbered list right after a bulleted one is its own <ol> (its items showed as bullets); a task item has no bullet; a path after 。 is a link',
+      /<\/ul><ol><li>one<\/li><li>two<\/li><\/ol>/.test(api.mdRender('- a\n- b\n1. one\n2. two'))
+      && /<li class="task"><span class="cb on">/.test(api.mdRender('- [x] done'))
+      && /class="fpath"[^>]*data-p="~\/p\/a\.md"/.test(api.mdRender('参照。~/p/a.md も')));
     ok('viewer: lists nest, fences stay verbatim', /<ul><li>a<ul><li>b<\/li><\/ul><\/li><\/ul>/.test(api.mdRender('- a\n  - b')) && api.mdRender('```\n**x**\n```').includes('**x**'));
     ok('viewer: a path in the conversation becomes a viewer link', api.linkify('see /Users/me/p/a.md, ok').includes('data-p="/Users/me/p/a.md"'));
     ok('viewer: the diff marks added and removed lines', /class="da">\+x/.test(api.diffRender('@@ -1 +1 @@\n+x\n-y')) && /class="dd">-y/.test(api.diffRender('+x\n-y')));

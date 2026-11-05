@@ -1,4 +1,4 @@
-#viewer{position:fixed;inset:0;z-index:60;background:color-mix(in srgb,var(--bg) 45%,transparent);display:flex;justify-content:center;align-items:stretch;padding:4vh 4vw}
+#viewer{position:fixed;inset:0;z-index:60;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(2px);display:flex;justify-content:center;align-items:stretch;padding:4vh 4vw}
 #viewer .vwin{flex:1;max-width:1100px;display:flex;flex-direction:column;background:var(--term-bg);border-radius:10px;box-shadow:var(--shadow-hi);overflow:hidden;min-width:0}
 #viewer .vbar{display:flex;align-items:center;gap:10px;padding:10px 14px;font-family:var(--mono);font-size:var(--fs-small);border-bottom:1px solid var(--line)}
 #viewer .pp{color:var(--ok);font-weight:700}
@@ -26,25 +26,41 @@
 #viewer .vnotes{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:var(--fs-small);color:var(--fg)}
 #viewer .vnotes[hidden]{display:none}#viewer .vnotes .toast{color:var(--dim)}
 #viewer .vnotes .vnsend{background:var(--info);color:var(--bg);border:0;border-radius:999px;padding:4px 14px;font:inherit;cursor:pointer}
-#viewer .md{max-width:820px;font-size:var(--fs-body);line-height:1.75;color:var(--fg)}
-#viewer .md h1,#viewer .md h2,#viewer .md h3,#viewer .md h4{line-height:1.35;margin:1.4em 0 .5em}
-#viewer .md h1{font-size:1.6em;padding-bottom:.3em;border-bottom:1px solid var(--line)}
-#viewer .md h2{font-size:1.3em;padding-bottom:.25em;border-bottom:1px solid var(--line)}
-#viewer .md h3{font-size:1.1em}
-#viewer .md p{margin:.7em 0}
-#viewer .md code{font-family:var(--mono);font-size:.88em;background:color-mix(in srgb,var(--fg) 8%,transparent);padding:.1em .35em;border-radius:4px}
-#viewer .md pre{background:color-mix(in srgb,var(--fg) 5%,transparent);padding:12px 14px;border-radius:6px;margin:.9em 0;overflow:auto;white-space:pre}
-#viewer .md pre code{background:none;padding:0;font-size:var(--fs-small)}
-#viewer .md pre.fm{opacity:.75}
-#viewer .md blockquote{margin:.8em 0;padding:.1em 1em;border-left:3px solid var(--line);color:var(--dim)}
-#viewer .md ul,#viewer .md ol{padding-left:1.6em;margin:.5em 0}
-#viewer .md li{margin:.2em 0}
-#viewer .md hr{border:0;border-top:1px solid var(--line);margin:1.5em 0}
-#viewer .md a{color:var(--info)}
-#viewer .md .mdtable{overflow:auto;margin:.9em 0}
-#viewer .md table{border-collapse:collapse;font-size:.92em}
-#viewer .md th,#viewer .md td{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
-#viewer .md th{background:color-mix(in srgb,var(--fg) 5%,transparent)}
+/* a Markdown file reads as a document: on the card colour (not the terminal's grey), centred, a measure of ~40em */
+#viewer .vwin:has(.vbody>.md){background:var(--card)}
+#viewer .vbody:has(>.md)>.vmeta{max-width:760px;margin:0 auto 12px}
+#viewer .md{max-width:760px;margin:0 auto;font-size:15px;line-height:1.8;color:var(--fg);word-break:break-word;overflow-wrap:anywhere}
+#viewer .md>:first-child{margin-top:.2em}
+#viewer .md h1,#viewer .md h2,#viewer .md h3,#viewer .md h4{line-height:1.4;margin:1.8em 0 .6em;font-weight:700;text-wrap:balance}
+#viewer .md h1{font-size:1.7em;margin-top:.4em;padding-bottom:.35em;border-bottom:1px solid var(--line)}
+#viewer .md h2{font-size:1.32em;padding-bottom:.3em;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+#viewer .md h3{font-size:1.12em}
+#viewer .md h4{font-size:1em;color:var(--dim)}
+#viewer .md p{margin:.8em 0}
+#viewer .md b,#viewer .md strong{font-weight:700}
+#viewer .md code{font-family:var(--mono);font-size:.86em;background:color-mix(in srgb,var(--fg) 8%,transparent);padding:.12em .4em;border-radius:4px}
+#viewer .md .codeblk{margin:1em 0}
+#viewer .md pre{background:var(--term-bg);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);padding:14px 16px;border-radius:8px;margin:0;overflow:auto;white-space:pre;line-height:1.6}
+#viewer .md pre[data-lang]::before{content:attr(data-lang);display:block;margin:-4px 0 6px;font-size:var(--fs-micro);color:var(--dim);letter-spacing:.04em;text-transform:lowercase}
+#viewer .md pre code{background:none;padding:0;font-size:13px}
+#viewer .md pre.fm{opacity:.75;margin:0 0 1em}
+#viewer .md blockquote{margin:1em 0;padding:.4em 1em;border-left:3px solid color-mix(in srgb,var(--info) 55%,var(--line));background:color-mix(in srgb,var(--fg) 4%,transparent);border-radius:0 6px 6px 0;color:var(--fg)}
+#viewer .md blockquote>:first-child{margin-top:.2em}#viewer .md blockquote>:last-child{margin-bottom:.2em}
+#viewer .md ul,#viewer .md ol{padding-left:1.5em;margin:.6em 0}
+#viewer .md ol{list-style:decimal}
+#viewer .md li{margin:.3em 0;padding-left:.15em}
+#viewer .md li::marker{color:var(--dim)}
+#viewer .md li>ul,#viewer .md li>ol{margin:.25em 0}
+#viewer .md li.task{list-style:none;margin-left:-1.3em}
+#viewer .md .cb{display:inline-block;width:1.2em;color:var(--dim)}#viewer .md .cb.on{color:var(--ok)}
+#viewer .md hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+#viewer .md a{color:var(--info);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--info) 35%,transparent)}
+#viewer .md a:hover{border-bottom-color:currentColor}
+#viewer .md .mdtable{overflow:auto;margin:1.1em 0}
+#viewer .md table{border-collapse:collapse;font-size:.92em;min-width:50%}
+#viewer .md th,#viewer .md td{border:0;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);padding:7px 14px 7px 0;text-align:left;vertical-align:top}
+#viewer .md th{font-weight:700;border-bottom:2px solid var(--line);white-space:nowrap}
+#viewer .md tr:last-child td{border-bottom:0}
 #viewer .md .mdimg{color:var(--dim)}
 a.fpath{color:var(--info);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
 @media (max-width:700px){#viewer{padding:0}#viewer .vwin{border-radius:0}#viewer .vbody{padding:12px 14px 40px}}
