@@ -3206,6 +3206,18 @@ console.log('== board server ==');
           D.stopBackground = realStop; A.sessions = realSessions;
           return okNow === true && seen.includes('aaa') && seen.includes('bbb');
         })());
+        ok('★ a session blocked on your answer (listed with no process) counts as stopped at once: it took 4 s, then went to a relay nobody could receive (30 s as 送信待ち)', (() => {
+          const D = require('../lib/dispatch.js'), A = require('../lib/alive.js');
+          const realStop = D.stopBackground, realSessions = A.sessions;
+          D.stopBackground = () => ({ ok: true });
+          A.sessions = () => new Map([['s2', { kind: 'background', status: 'idle', state: 'blocked', pid: null, short: 'ccc', shorts: ['ccc'] }]]);
+          const t0 = Date.now(); const okNow = Board.stopAndConfirm('s2', { short: 'ccc', shorts: ['ccc'] }, { waitMs: 3000 });
+          const took = Date.now() - t0;
+          A.sessions = () => new Map([['s3', { kind: 'background', status: 'idle', state: 'done', pid: 4321, short: 'ddd', shorts: ['ddd'] }]]);
+          const live = Board.stopAndConfirm('s3', { short: 'ddd', shorts: ['ddd'] }, { waitMs: 400 });
+          D.stopBackground = realStop; A.sessions = realSessions;
+          return okNow === true && took < 1000 && live === false;
+        })());
         {
           // A session someone is sitting in cannot be resumed and must not be
           // stopped — but Claude sessions can message each other, and that
@@ -3328,7 +3340,7 @@ console.log('== board server ==');
           {
             // an idle background session that will not stop in time: relayed now, not held until its next idle
             const S3 = '5e551011-0000-4000-8000-0000000000f3';
-            alive = new Map([[S1, bgBusy], [S2, { kind: 'interactive', status: 'busy', name: 'wf-two' }], [S3, { ...bgIdle, short: 's3', shorts: ['s3'], name: 'wf-three' }]]);
+            alive = new Map([[S1, bgBusy], [S2, { kind: 'interactive', status: 'busy', name: 'wf-two' }], [S3, { ...bgIdle, short: 's3', shorts: ['s3'], name: 'wf-three', pid: 7777 }]]);
             const before = calls.length, rs = Board.sendTo({ agent: 'claude', id: S3, text: 'すぐ渡す', dir: tmp });
             ok('★ a session that does not stop in time gets the message relayed at once (it waited ~40s as 送信待ち)',
               rs.relayed && calls.length === before + 1 && calls[before].how === 'relay' && calls[before].text === 'すぐ渡す');
