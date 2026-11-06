@@ -17,11 +17,13 @@ try{
   await wait(()=>typed.includes('!')||[...document.querySelectorAll('#mhist .turn.user')].filter(e=>e._echo).length,15000).catch(()=>{});
   out.echo=[...document.querySelectorAll('#mhist .turn.user')].filter(e=>e._echo).map(e=>e.textContent.slice(0,60));
   expect('the command shows in the conversation as sent',out.echo.some(x=>/! echo BANGOK/.test(x)));
-  await wait(()=>typed.some(x=>/echo BANGOK/.test(x)),15000).catch(()=>{});await sleep(300);
+  await wait(()=>typed.some(x=>/echo BANGOK/.test(x)),15000).catch(()=>{});await sleep(400);
   out.sent=sent.map(m=>m.type);out.typed=typed.slice(0,4);
   expect('a ! message is not sent as words',!sent.length);
   const i=typed.indexOf('!');
   expect('the ! is typed first, alone (it switches Claude Code to bash mode)',i>=0);
-  expect('… then the command and Enter',i>=0&&typed.slice(i+1).some(x=>x==='echo BANGOK\r'));
+  const j=typed.findIndex((x,k)=>k>i&&x.includes('echo BANGOK'));
+  expect('… then the command (pasted, without its Enter)',j>i&&!typed[j].includes('\r'));
+  expect('… then Enter on its own',j>i&&typed.slice(j+1).includes('\r'));
 }finally{window.dispatch=d0;window.post=p0;const p=panelPty(c);if(p)ptyClose(p.id)}
 return {ok:bad.length===0,bad,out};
