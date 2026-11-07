@@ -3329,6 +3329,20 @@ console.log('== board server ==');
         // treating it as "nobody is running" forks copies of live conversations
         ok('★ unknown liveness holds everything instead of resuming into it',
           Q.drain(null).sent.length === 0 && Q.read().length === 1);
+        {
+          // held for a session at work after a relay failed (not found by name): handed over again, a few times, then idle
+          const busyBg = new Map([[LIVE1, { kind: 'background', status: 'busy', short: 'l1', shorts: ['l1'], name: 'n', pid: 1 }]]);
+          const hands = [];const ho = { stopAndConfirm: () => true, handOver: (i) => { hands.push(i.text); return null; } };
+          const was = process.env.RALLY_QUEUE_BACKOFF;process.env.RALLY_QUEUE_BACKOFF = '0';
+          Q.drain(busyBg, ho);
+          const h1 = hands.length;
+          Q.write(Q.read().map((i) => ({ ...i, fails: 3 })));
+          Q.drain(busyBg, ho);
+          ok('★ a message held for a working session (its relay failed) is handed over again from the queue, not left until idle; after 3 failures it waits for idle',
+            h1 === 1 && /あとでこれを/.test(hands[0]) && hands.length === 1 && Q.read().length === 1);
+          Q.write(Q.read().map((i) => { const x = { ...i }; delete x.fails; return x; }));
+          if (was == null) delete process.env.RALLY_QUEUE_BACKOFF; else process.env.RALLY_QUEUE_BACKOFF = was;
+        }
         // and a wakeable session is only woken when the stop is confirmed
         const idleBg = new Map([[LIVE1, { kind: 'background', status: 'idle', short: 'live1', shorts: ['live1'] }]]);
         ok('★ drain will not resume a session it could not confirm stopped',
