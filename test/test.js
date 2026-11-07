@@ -4610,11 +4610,17 @@ process.stdout.write(String(bad));\n`);
     }
     {
       const Live = require('../lib/live.js');
-      const c = { alive: true, aliveState: 'working', aliveStatus: 'idle', turnEnded: true, column: 'answered', reason: 'the agent finished its turn', aliveBg: { n: 2, shells: 1, agents: 0 }, last: { inTurn: true, assistant: '7分後にもう一度確認します。' } };
-      const q = { ...c, last: { inTurn: true, assistant: 'AとBどちらにしますか？' } }, nobg = { ...c, aliveBg: { n: 0 } };
-      Live.overlayAlive([c, q, nobg]);
-      ok('★ lanes: a session waiting on its own background work (claude agents: working, idle) is Working, not Your Turn; one that asked you, or has no such work, stays yours',
-        c.column === 'working' && q.column === 'answered' && nobg.column === 'answered');
+      const c = { alive: true, aliveState: 'working', aliveStatus: 'idle', turnEnded: true, column: 'answered', reason: 'the agent finished its turn', aliveBg: { n: 1, shells: 1, agents: 0 }, last: { inTurn: true, assistant: 'ビルドを裏で回しています。' } };
+      Live.overlayAlive([c]);
+      const A = require('../lib/alive.js'), J = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-jobs-')), wasJ = process.env.RALLY_CLAUDE_JOBS;
+      const job = (short, inFlight) => { fs.mkdirSync(path.join(J, short)); fs.writeFileSync(path.join(J, short, 'state.json'), JSON.stringify({ state: 'working', tempo: 'idle', inFlight })); };
+      job('aaaa1111', { tasks: 1, kinds: ['artifact_watch'] }); job('bbbb2222', { tasks: 2, kinds: ['artifact_watch', 'session_cron'] }); job('cccc3333', { tasks: 2, kinds: ['local_bash', 'artifact_watch'] });
+      process.env.RALLY_CLAUDE_JOBS = J;
+      const w1 = A.jobTasks('aaaa1111'), w2 = A.jobTasks('bbbb2222'), w3 = A.jobTasks('cccc3333');
+      if (wasJ == null) delete process.env.RALLY_CLAUDE_JOBS; else process.env.RALLY_CLAUDE_JOBS = wasJ;
+      fs.rmSync(J, { recursive: true, force: true });
+      ok('★ lanes: a finished session the CLI calls "working" while idle stays in Your Turn (an artifact watch or a timed wake-up put it in Working for hours); what it keeps running is on the card, and a watch or a wake-up is not "running"',
+        c.column === 'answered' && c.background && c.background.n === 1 && w1 === null && w2 === null && w3 && w3.n === 1 && w3.shells === 1);
       const t0 = Date.now() - 5000, ev = (k, o) => ({ t: t0 + k, ...o });
       const handed = { events: [ev(0, { kind: 'assistant' }), ev(1, { kind: 'tool_call', tool: 'SubagentHandback', callId: 'h' }), ev(2, { kind: 'tool_result', callId: 'h', ok: true })] };
       const cut = { events: [ev(0, { kind: 'assistant' }), ev(1, { kind: 'tool_call', tool: 'Bash', callId: 'b' }), ev(2, { kind: 'tool_result', callId: 'b', ok: true })] };
