@@ -1,0 +1,18 @@
+/* ↪ 別のセッションへ (68-forward.js) */
+.hist .turn .fbtn{background:none;border:0;color:var(--dim);cursor:pointer;font:inherit;font-size:var(--fs-small);padding:0 4px;margin-left:2px;border-radius:4px;opacity:0;transition:opacity .12s ease}
+.hist .turn:hover>.fbtn,.hist .turn .fbtn:focus-visible{opacity:.8}.hist .turn .fbtn:hover{opacity:1;color:var(--info);background:color-mix(in srgb,var(--info) 12%,transparent)}
+#fwd{position:fixed;inset:0;z-index:70;background:color-mix(in srgb,var(--bg) 45%,transparent);display:flex;justify-content:center;align-items:flex-start;padding:10vh 4vw}
+#fwd .fwc{width:min(620px,100%);max-height:78vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-hi,var(--shadow));padding:14px 16px;box-sizing:border-box;gap:8px}
+#fwd .fwh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+#fwd .fwh .dim{color:var(--dim);font-size:var(--fs-small)}
+#fwd .fwt{margin:0;max-height:96px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:var(--fs-small);color:var(--fg);background:color-mix(in srgb,var(--fg) 5%,transparent);border-radius:6px;padding:6px 10px}
+#fwd .fwq{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+#fwd .fwl{overflow:auto;min-height:60px;display:flex;flex-direction:column;gap:1px}
+#fwd .fwr{display:grid;grid-template-columns:1.4em minmax(0,1fr);gap:0 8px;align-items:baseline;text-align:left;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--fg);cursor:pointer;font:inherit}
+#fwd .fwr b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#fwd .fwr .d{grid-column:2;color:var(--dim);font-size:var(--fs-meta);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#fwd .fwr.on,#fwd .fwr:hover{background:var(--hover)}
+#fwd .fwr.on{box-shadow:inset 3px 0 0 var(--info)}
+#fwd .fwn{display:flex;gap:6px;align-items:center;color:var(--dim);font-size:var(--fs-small)}
+#fwd .fwh,#fwd .fwt,#fwd .fwq,#fwd .fwn{flex:none}
+#fwd .fwl{flex:1 1 auto}

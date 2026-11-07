@@ -44,6 +44,7 @@ css_scenarios() {
     70-list.css|05-board.css)                               echo "listdock layout view";;
     86-askpop.css)                                          echo "askpop";;
     87-away.css|67-away.js)                                 echo "away";;
+    89-forward.css|68-forward.js)                           echo "forward";;
     *)                                                      echo "view layout controls";;
   esac
 }
