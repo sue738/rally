@@ -1,0 +1,20 @@
+/* おかえり (67-away.js): what moved while you were away, on one sheet */
+#away{position:fixed;inset:0;z-index:66;background:color-mix(in srgb,var(--bg) 45%,transparent);display:flex;justify-content:center;align-items:flex-start;padding:8vh 4vw}
+#away .awc{width:min(720px,100%);max-height:80vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-hi,var(--shadow));padding:16px 18px;box-sizing:border-box}
+#away .awh{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;min-width:0}
+#away .awh b{font-size:1.12em}
+#away .awh .dim{color:var(--dim);font-size:var(--fs-small)}
+#away .awx{margin-left:auto;background:none;border:0;color:var(--dim);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px}
+#away .awx:hover{background:var(--hover);color:var(--fg)}
+#away h3{font-size:var(--fs-small);color:var(--dim);margin:14px 0 4px;font-weight:600;letter-spacing:.03em}
+#away h3 .n{font-weight:400}
+#away .aws.you h3{color:var(--warn)}
+#away .awr{display:grid;grid-template-columns:1.4em minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;width:100%;text-align:left;padding:7px 10px;border:0;border-radius:8px;background:transparent;color:var(--fg);cursor:pointer;font:inherit}
+#away .awr:hover,#away .awr:focus-visible{background:var(--hover);outline:none}
+#away .awr b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#away .awr .awt{color:var(--dim);font-size:var(--fs-meta);white-space:nowrap}
+#away .awr .awl{grid-column:2/4;color:var(--dim);font-size:var(--fs-small);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#away .aws.you .awr{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--warn) 70%,transparent)}
+#away .awf{display:flex;align-items:center;gap:10px;margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+#away .awf label{margin-right:auto;color:var(--dim);font-size:var(--fs-small);display:flex;gap:6px;align-items:center}
+@media (max-width:700px){#away{padding:0}#away .awc{border-radius:0;max-height:100vh}}

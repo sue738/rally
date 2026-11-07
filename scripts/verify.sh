@@ -43,6 +43,7 @@ css_scenarios() {
     60-newsession.css)                                      echo "new yaynew agynew";;
     70-list.css|05-board.css)                               echo "listdock layout view";;
     86-askpop.css)                                          echo "askpop";;
+    87-away.css|67-away.js)                                 echo "away";;
     *)                                                      echo "view layout controls";;
   esac
 }
@@ -55,7 +56,7 @@ js_scenarios() {
     43-askpop.js)                                            echo "askpop askwire askq";;
     51-strip.js|54-pty.js|57-panel-term.js|60-pty-park.js)  echo "term pty panelterm ptycache split close termui termask inputbox";;
     75-keys.js|01-keymap.js|90-help.js|92-keyset.js)        echo "kbd keys keybind qmark";;
-    78-boot.js|81-palette.js)                               echo "views controls covered palhold";;
+    78-boot.js|81-palette.js)                               echo "views controls covered palhold away";;
     *)                                                      echo "view detail covered";;
   esac
 }
