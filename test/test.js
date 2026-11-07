@@ -1188,7 +1188,7 @@ console.log('== lanes from the process and from subagents ==');
       fs.rmSync(fenv.FAKE_MADE, { force: true });
       ok('selftest: each scenario has its own run logs (a session one woke is not "starting" in the next)', /RALLY_RUNS="\$SCRATCH\/runs-\$sc"/.test(sh));
     }
-    ok('★ alive: sessions() adds the starting ones as busy background (so sends hold instead of resuming)', /for \(const \[id\] of starting\(\)\) if \(!map\.has\(id\)\) map\.set\(id, \{ kind: 'background', status: 'busy'/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'alive.js'), 'utf8')));
+    ok('★ alive: sessions() adds the starting ones as busy background (so sends hold instead of resuming)', /for \(const \[id, at\] of starting\(\)\) if \(!map\.has\(id\) && !turnEndedSince\(id, at\)\) map\.set\(id, \{ kind: 'background', status: 'busy'/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'alive.js'), 'utf8')));
   }
   {
     // the app across launches, the Dock and the menu bar, answering from a banner
@@ -3244,6 +3244,30 @@ console.log('== board server ==');
           const okNow = Board.stopAndConfirm('s1', { short: 'aaa', shorts: ['aaa', 'bbb'] }, { waitMs: 1000 });
           D.stopBackground = realStop; A.sessions = realSessions;
           return okNow === true && seen.includes('aaa') && seen.includes('bbb');
+        })());
+        ok('★ a stopped session is not kept running by the board\'s own "starting" guess: a follow-up within 2 min of the last send resumed after 4 s of waiting, a relay to nobody and ~2 min held (11-07)', (() => {
+          const D = require('../lib/dispatch.js'), A = require('../lib/alive.js');
+          const realStop = D.stopBackground, realSessions = A.sessions;
+          D.stopBackground = () => ({ ok: true });
+          A.sessions = () => new Map([['s4', { kind: 'background', status: 'busy', pid: null, name: null, short: 's4', shorts: ['s4'], starting: true, startAt: Date.now() - 30000 }]]);
+          const t0 = Date.now(); const okNow = Board.stopAndConfirm('s4', { short: 's4', shorts: ['s4'], pid: 99 }, { waitMs: 3000 });
+          // a guess made after this stop began is another send resuming it now: not taken for stopped (it would fork)
+          A.sessions = () => new Map([['s5', { kind: 'background', status: 'busy', pid: null, name: null, short: 's5', shorts: ['s5'], starting: true, startAt: Date.now() + 1000 }]]);
+          const racing = Board.stopAndConfirm('s5', { short: 's5', shorts: ['s5'], pid: 98 }, { waitMs: 400 });
+          D.stopBackground = realStop; A.sessions = realSessions;
+          // and the guess ends with the turn it was made for: a transcript that closed a turn since the send
+          const A2 = require('../lib/alive.js'), cd = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-cd-')), was = process.env.CLAUDE_CONFIG_DIR;
+          fs.mkdirSync(path.join(cd, 'projects', 'p'), { recursive: true });
+          const id = '0000beef-0000-4000-8000-000000000001', at = Date.now() - 20000;
+          const tf = path.join(cd, 'projects', 'p', id + '.jsonl');
+          fs.writeFileSync(tf, JSON.stringify({ type: 'user', timestamp: new Date(at + 1000).toISOString() }) + '\n');
+          process.env.CLAUDE_CONFIG_DIR = cd;
+          const open = A2.turnEndedSince(id, at);
+          fs.appendFileSync(tf, JSON.stringify({ type: 'system', subtype: 'turn_duration', timestamp: new Date(at + 3000).toISOString() }) + '\n');
+          const ended = A2.turnEndedSince(id, at), before = A2.turnEndedSince(id, at + 4000), fresh = A2.turnEndedSince(id, at, at + 4000);
+          if (was == null) delete process.env.CLAUDE_CONFIG_DIR; else process.env.CLAUDE_CONFIG_DIR = was;
+          fs.rmSync(cd, { recursive: true, force: true });
+          return okNow === true && Date.now() - t0 < 1000 && racing === false && open === false && ended === true && before === false && fresh === false;
         })());
         ok('★ a session blocked on your answer (listed with no process) counts as stopped at once: it took 4 s, then went to a relay nobody could receive (30 s as 送信待ち)', (() => {
           const D = require('../lib/dispatch.js'), A = require('../lib/alive.js');
