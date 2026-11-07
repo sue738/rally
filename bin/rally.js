@@ -404,7 +404,14 @@ async function main() {
     if (!sess) return process.stdout.write(Text.json({ files: [], error: tr('セッションが見つかりません') }));
     const m = require('../lib/made.js').forSession(sess);
     const paths = [...(m.edited || []), ...(m.files || [])].sort((a, b) => b.t - a.t).map((f) => f.path);
-    return process.stdout.write(Text.json({ agent: o.agentName, session: o.session, ...require('../lib/changes.js').of(paths) }));
+    return process.stdout.write(Text.json({ agent: o.agentName, session: o.session, ...require('../lib/changes.js').of(paths), review: ((R) => { R.collect(); return R.get(o.agentName, o.session); })(require('../lib/review.js')) }));
+  }
+  if (o.command === 'review') {
+    // one shot for the app: another model reads what a session changed (lib/review.js); its findings come with `changes`
+    try {
+      const sess = Board.sessionRecord({ agent: o.agentName, id: o.session, hours: o.hours || 24, dirs: o.dirs });
+      return process.stdout.write(Text.json(require('../lib/review.js').startFor({ agent: o.agentName, id: o.session, sess, model: o.model })));
+    } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }
   }
   if (o.command === 'view') {
     // one shot for the app: one file for the viewer (text, picture, git diff)

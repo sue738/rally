@@ -4671,6 +4671,23 @@ process.stdout.write(String(bad));\n`);
       ok('★ app: a web link opens in the browser only when clicked (a previewed page could open pages by script)', /if url\.scheme == "http" \|\| url\.scheme == "https" \{ if clicked \{ open\(url\) \}; return \.cancel \}/.test(sw));
     }
     {
+      // 別のモデルで見てもらう (lib/review.js): the diff the reviewer reads, its answer, and when one is suggested
+      const RV = require('../lib/review.js');
+      const d = RV.diffText([{ path: '/r/a.js', diff: 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -10,3 +10,4 @@\n ctx\n-old\n+new1\n+new2\n ctx2' }, { path: '/r/k.pem', secret: true, diff: '+x' }]);
+      ok('★ review: the reviewer reads each line with the new file\'s line number (a finding then names a line the viewer can comment on); secrets are left out',
+        /### \/r\/a\.js/.test(d.text) && /n10  ctx/.test(d.text) && /n11\+ new1/.test(d.text) && /n12\+ new2/.test(d.text) && /n13  ctx2/.test(d.text) && /      - old/.test(d.text) && !/k\.pem/.test(d.text));
+      const a = RV.parseAnswer(JSON.stringify({ type: 'result', result: '前置き\n{"summary":"s","findings":[{"file":"/r/a.js","line":11,"severity":"high","title":"t","why":"w","fix":"f"},{"title":""}]}' }));
+      ok('review: the answer is read out of the CLI envelope and a preamble; empty findings dropped', a && a.findings.length === 1 && a.findings[0].line === 11 && a.findings[0].severity === 'high');
+      ok('★ review: suggested after you say it is still not fixed, for files where a slip costs most, and for a big change — not for an ordinary one, nor "author" read as "auth"',
+        RV.hint({ human: 'これ直してもらったと思うのにまだ直ってない', files: [], lines: 0 }).why === 'stuck'
+        && RV.hint({ files: ['/r/.github/workflows/ci.yml'], lines: 3 }).why === 'risky' && RV.hint({ files: ['/r/src/auth/login.ts'], lines: 3 }).why === 'risky'
+        && RV.hint({ files: ['/r/a.js'], lines: 320 }).why === 'big' && RV.hint({ files: Array.from({ length: 8 }, (_, i) => '/r/f' + i + '.js'), lines: 10 }).why === 'big'
+        && RV.hint({ files: ['/r/a.js'], lines: 40 }) === null && RV.hint({ files: ['/r/memory/book-base-no-author-anecdotes.md'], lines: 5 }) === null
+        && RV.pickModel('claude-opus-5-5') === 'fable' && RV.pickModel('claude-fable-5-1') === 'opus');
+      const tc = RV.turnChanges([{ kind: 'user', human: true, t: 100 }, { kind: 'tool_call', op: 'write', input: { path: '/r/a.js' } }, { kind: 'tool_result', lines: { added: 5, removed: 2 } }, { kind: 'tool_call', op: 'shell', input: { command: 'ls' } }]);
+      ok('review: the last turn\'s changes are counted from your last message on', tc.lines === 7 && tc.files.join() === '/r/a.js' && tc.since === 100);
+    }
+    {
       // speed: an unchanged transcript is not parsed again for the open panel; the cards are built while `claude agents` answers
       const LM = require('../lib/lastMessage.js'), T = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-hm-')), f = path.join(T, 's.jsonl');
       fs.writeFileSync(f, JSON.stringify({ type: 'user', timestamp: new Date().toISOString(), message: { role: 'user', content: 'はじめ' } }) + '\n');

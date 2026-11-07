@@ -45,6 +45,7 @@ css_scenarios() {
     86-askpop.css)                                          echo "askpop";;
     87-away.css|67-away.js)                                 echo "away";;
     89-forward.css|68-forward.js)                           echo "forward";;
+    92-review.css|88-review.js)                             echo "review";;
     *)                                                      echo "view layout controls";;
   esac
 }

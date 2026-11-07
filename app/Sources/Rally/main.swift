@@ -923,6 +923,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 if let m = body["model"] as? String, !m.isEmpty { args += ["--model", m] }
             }
             actQueue.async { self.ack("queue", self.runNode(args)) }
+        case "review":
+            // 別のモデルで見てもらう: one review of what a session changed (lib/review.js); the result comes with `changes`
+            var args = ["review", "--as", (body["agent"] as? String) ?? "", "--session", (body["session"] as? String) ?? ""]
+            if let m = body["model"] as? String, !m.isEmpty { args += ["--model", m] }
+            slowQueue.async { self.ack("review", self.runNode(args)) }
         case "wip":
             // 棚卸し: read the tail of one session and cache what is still open
             var args = ["wip", "--as", (body["agent"] as? String) ?? "", "--session", (body["session"] as? String) ?? ""]

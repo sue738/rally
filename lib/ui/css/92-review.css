@@ -1,0 +1,9 @@
+/* 別のモデルで見てもらう (88-review.js) */
+.card .rvh,.rvh{color:var(--info);font-size:var(--fs-meta);white-space:nowrap}
+#mmeta .acts .rvh{color:var(--info);border-color:color-mix(in srgb,var(--info) 45%,var(--line))}
+#viewer .vrev{display:inline-flex;align-items:center;gap:6px;margin-left:12px}
+#viewer .vrev select{font:inherit;font-size:var(--fs-small);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:1px 4px}
+#viewer .vrev .vrevgo{color:var(--info)}
+#viewer .vrevsum{margin:0 0 14px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--info) 35%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--info) 6%,transparent);font-size:var(--fs-small);line-height:1.6}
+#viewer .vrevsum ul{margin:6px 0 0;padding-left:1.3em}
+#viewer .vrevsum .bad{color:var(--bad)}
