@@ -406,6 +406,25 @@ async function main() {
     const paths = [...(m.edited || []), ...(m.files || [])].sort((a, b) => b.t - a.t).map((f) => f.path);
     return process.stdout.write(Text.json({ agent: o.agentName, session: o.session, ...require('../lib/changes.js').of(paths), review: ((R) => { R.collect(); return R.get(o.agentName, o.session); })(require('../lib/review.js')) }));
   }
+  if (o.command === 'diagnose') {
+    // 使い方診断 (lib/diagnose.js): count the last --days days and write them, with the prompt for a new session, into a
+    // trusted folder's .rally/ (--cwd, else the trusted folder used most recently): the page starts that session
+    try {
+      const { trustedDirs } = require('../lib/board/sessions.js');
+      const trusted = trustedDirs();
+      let dir = o.dirArg || '';
+      if (!dir) {
+        // the trusted folder you used most this week (the home folder cannot start a background session)
+        const Scan = require('../lib/scan.js'), used = {};
+        for (const f of Scan.sessions({ sinceMs: Date.now() - 7 * 864e5 }).found || []) for (const s of f.sessions || []) if (s.agent === 'claude' && !s.parentId && trusted.includes(s.project)) used[s.project] = (used[s.project] || 0) + 1;
+        dir = (Object.entries(used).sort((a, b) => b[1] - a[1])[0] || [])[0] || trusted[0] || '';
+      }
+      if (!dir) return process.stdout.write(Text.json({ error: tr('診断を置くフォルダが見つかりません(Claude Code で信頼したフォルダが要ります)') }));
+      const cache = require('../lib/enrich.js').readCache(), titles = {};
+      for (const [k, v] of Object.entries(cache || {})) if (v && v.title) titles[k] = v.title;
+      return process.stdout.write(Text.json(require('../lib/diagnose.js').prepare({ dir, days: o.days > 0 ? Math.min(60, o.days) : 14, titles })));
+    } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }
+  }
   if (o.command === 'review') {
     // one shot for the app: another model reads what a session changed (lib/review.js); its findings come with `changes`
     try {

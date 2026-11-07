@@ -46,6 +46,7 @@ css_scenarios() {
     87-away.css|67-away.js)                                 echo "away";;
     89-forward.css|68-forward.js)                           echo "forward";;
     92-review.css|88-review.js)                             echo "review";;
+    93-diagnose.js)                                         echo "diagnose";;
     *)                                                      echo "view layout controls";;
   esac
 }

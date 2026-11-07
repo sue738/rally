@@ -923,6 +923,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 if let m = body["model"] as? String, !m.isEmpty { args += ["--model", m] }
             }
             actQueue.async { self.ack("queue", self.runNode(args)) }
+        case "diagnose":
+            // 使い方診断: count the last weeks (lib/diagnose.js); the page opens 新規 with the prompt filled in
+            let days = (body["days"] as? Int) ?? 14
+            slowQueue.async {
+                let (out, code) = self.runNode(["diagnose", "--days", String(days)])
+                if code == 0, (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil { self.call("window.__kanban.diagnosed(\(out))") }
+                else if let d = try? JSONSerialization.data(withJSONObject: ["error": String(out.prefix(300))]), let j = String(data: d, encoding: .utf8) { self.call("window.__kanban.diagnosed(\(j))") }
+            }
         case "review":
             // 別のモデルで見てもらう: one review of what a session changed (lib/review.js); the result comes with `changes`
             var args = ["review", "--as", (body["agent"] as? String) ?? "", "--session", (body["session"] as? String) ?? ""]

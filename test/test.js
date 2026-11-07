@@ -4671,6 +4671,28 @@ process.stdout.write(String(bad));\n`);
       ok('★ app: a web link opens in the browser only when clicked (a previewed page could open pages by script)', /if url\.scheme == "http" \|\| url\.scheme == "https" \{ if clicked \{ open\(url\) \}; return \.cancel \}/.test(sw));
     }
     {
+      // 使い方診断 (lib/diagnose.js): one transcript counted; the files written into the folder's ignored .rally/
+      const DG = require('../lib/diagnose.js'), T = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-dg-')), f = path.join(T, 's.jsonl');
+      const ln = (o) => JSON.stringify({ timestamp: new Date().toISOString(), entrypoint: 'cli', ...o });
+      fs.writeFileSync(f, [
+        ln({ type: 'user', permissionMode: 'auto', message: { role: 'user', content: 'これ直して' } }),
+        ln({ type: 'assistant', message: { id: 'm1', model: 'claude-opus-5-5', usage: { input_tokens: 10, output_tokens: 20 }, content: [{ type: 'tool_use', name: 'Skill', input: { skill: 'open' } }, { type: 'tool_use', name: 'Bash', input: { command: 'ls' } }] } }),
+        ln({ type: 'user', isMeta: true, message: { role: 'user', content: 'Stop hook feedback:\n報告が 2504 文字あります' } }),
+        ln({ type: 'user', message: { role: 'user', content: 'まだ直ってないよ' } }),
+        ln({ type: 'user', message: { role: 'user', content: '<command-name>/effort</command-name>\n<command-args>high</command-args>' } }),
+        ln({ type: 'system', subtype: 'compact_boundary' }),
+      ].join('\n') + '\n');
+      const c = DG.countFile(f, 'claude');
+      ok('★ diagnose: a transcript is counted — your words, a correction kept as an example, skills, tools, commands and /effort, the stop hook\'s complaint (a meta line), compactions',
+        c && c.humanMsgs === 2 && c.corrections.length === 1 && /まだ直ってない/.test(c.corrections[0].text) && c.skills.open === 1 && c.tools.Bash === 1
+        && c.commands.effort === 1 && c.efforts[0] === 'high' && Object.keys(c.stopHooks).length === 1 && c.compactions === 1 && c.modes.auto === 1 && c.entrypoint === 'cli');
+      const md = DG.markdown({ at: Date.now(), since: Date.now() - 864e5, sum: { sessions: 1, scripted: 0, scriptedUsd: 0, scriptedBy: [], days: 1, humanMsgs: 2, usd: 1, compactions: 1, errors: 0, subagentCalls: 0, tools: c.tools, skills: c.skills, commands: c.commands, stopHooks: c.stopHooks, modes: c.modes, models: {}, efforts: { high: 1 }, skillsUnused: ['expense'] }, sessions: [{ ...c, id: 'x', title: 'T', project: T, scripted: false }] }, '/x.json');
+      ok('diagnose: the summary lists the unused skills, the complaints and the examples', /expense/.test(md) && /報告が N 文字/.test(md) && /まだ直ってない/.test(md));
+      const P = DG.prompt({ days: 14, mdPath: '/a.md', jsonPath: '/a.json', reportPath: '/r.md' });
+      ok('diagnose: the session is asked for evidence, not to change settings, and to save its report', /根拠/.test(P) && /変更しない/.test(P) && /\/r\.md/.test(P));
+      fs.rmSync(T, { recursive: true, force: true });
+    }
+    {
       // 別のモデルで見てもらう (lib/review.js): the diff the reviewer reads, its answer, and when one is suggested
       const RV = require('../lib/review.js');
       const d = RV.diffText([{ path: '/r/a.js', diff: 'diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -10,3 +10,4 @@\n ctx\n-old\n+new1\n+new2\n ctx2' }, { path: '/r/k.pem', secret: true, diff: '+x' }]);
