@@ -1100,6 +1100,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 self.logLine(["ev": "bgtask-done", "session": String(session.prefix(8)), "out": String(out.prefix(300))])
                 self.call("window.__kanban.bgTasksDone&&window.__kanban.bgTasksDone(\(PtyHost.js(session)),\((try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil ? out : "{}"))")
             }
+        case "autoallow":
+            // 自動承認 on or off (lib/perm.js autoAllows)
+            let on = (body["on"] as? Bool) == true
+            if selftesting { notified.append(["key": "autoallow", "title": on ? "on" : "off", "body": ""]); return }
+            actQueue.async { _ = self.runNode(["autoallow", on ? "--on" : "--off"]) }
         case "bgauto":
             // the automatic stop of wait loops left looping (lib/bgtasks.js reap), on or off
             let on = (body["on"] as? Bool) == true
@@ -1299,7 +1304,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         case "perm":
             // answer a permission prompt the hook is holding for the board (lib/perm.js)
             let id = (body["id"] as? String) ?? "", decision = (body["decision"] as? String) ?? ""
-            guard id.range(of: "^[0-9a-f]{32}$", options: .regularExpression) != nil, decision.range(of: "^(allow|deny|pass|answer|automode|rule|always|always:[0-3])$", options: .regularExpression) != nil else { return ack("perm", ("bad request", 1)) }
+            guard id.range(of: "^[0-9a-f]{32}$", options: .regularExpression) != nil, decision.range(of: "^(allow|deny|pass|answer|automode|autoallow|rule|always|always:[0-3])$", options: .regularExpression) != nil else { return ack("perm", ("bad request", 1)) }
             // a question (AskUserQuestion) is answered with what was chosen: question text → answer
             var args = ["perm", "--id", id, "--answer", decision]
             if decision == "answer" {

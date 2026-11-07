@@ -40,6 +40,7 @@ Usage:
   ${NAME} wip                  what is still open in the sessions that were read (the ${tr('残作業')} view)
   ${NAME} wip --all [--limit N] [--hours H]   read the half-finished ones that were never read (default 10)
   ${NAME} wip --as claude --session ID   read the tail and cache what is still open (what ${tr('棚卸し')} does)
+  ${NAME} autoallow [--on | --off]   自動承認: allow at once what auto mode still asks you (auto-mode sessions only; questions and plans still wait; logged)
   ${NAME} bgtasks [--stop JSON | --on | --off]   stop background tasks of live sessions (each re-checked first), or turn the automatic stop of stale wait loops on / off
   ${NAME} done --as claude --session ID [--memory]  close a session (--memory: ask it to save what it learned)
 
@@ -338,6 +339,12 @@ async function main() {
     // one shot for the app: a background session opened only to be looked at, stopped again once let go (idle only)
     try { return process.stdout.write(Text.json(require('../lib/bgopen.js').stopIdle({ id: o.session, force: !!o.force }))); }
     catch (e) { return process.stdout.write(Text.json({ error: String(e && e.message || e) })); }
+  }
+  if (o.command === 'autoallow') {
+    // 自動承認 on / off (lib/perm.js autoAllows); with neither, whether it is on
+    const P = require('../lib/perm.js');
+    if (o.on || o.off) return process.stdout.write(Text.json(P.setAutoAllow(!!o.on)));
+    return process.stdout.write(Text.json({ on: P.autoAllowOn(), log: P.autoAllowLog() }));
   }
   if (o.command === 'bgtasks') {
     // one shot for the app: 裏で実行中's list; --stop re-checks each first (same parent, same command line)

@@ -49,6 +49,7 @@ button.mini.toggle.tflag.on{color:var(--ok);background:color-mix(in srgb,var(--o
 .skillpop .hintrow .d{color:var(--dim)}
 .skillpop .hintrow+.sk{margin-top:2px}
 button.mini.tflag.primary{color:var(--ok)}
+#autoallow{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-small)}#autoallow[hidden]{display:none}#autoallow b{color:var(--warn,#d4a72c);font-weight:600}
 #limits{display:flex;gap:12px;font-family:var(--mono);font-size:var(--fs-meta);color:var(--fg);white-space:nowrap}
 #limits .lim{display:inline-flex;flex-direction:column;gap:2px}#limits .lim b{font-weight:600}
 #limits .limtop{display:flex;gap:1ch}

@@ -112,6 +112,8 @@ function writeFile(p, lines) { fs.mkdirSync(path.dirname(p), { recursive: true }
   ok('★ perm: a one-line Bash command starts its rule from its prefix, as the terminal does (python3 -c … → python3 *)', Perm.bashPrefix('python3 -c "print(1)"') === 'python3 *' && Perm.bashPrefix('git status --short') === 'git status *' && Perm.bashPrefix('sudo rm -rf x') === 'sudo rm -rf x');
   const ch = Perm.choicesOf('Bash', { command: 'python3 -c "print(1)"' }, sg).map((x) => x.d);
   ok('★ perm: a Bash prompt\'s choices are the terminal\'s, in its order: yes / yes+rule / yes+auto mode / no', JSON.stringify(ch) === '["allow","rule","automode","deny"]');
+  ok('★ perm: the agent\'s one-line description rides along as `why` (collapsed, capped), absent when none',
+    Perm.whyOf({ command: 'ls', description: '  シェル設定を\n読む ' }) === 'シェル設定を 読む' && Perm.whyOf({ command: 'ls' }) === '' && Perm.whyOf({ description: 'x'.repeat(300) }).length === 201);
   ok('perm: a question or a plan keeps its own choices (none of these)', Perm.choicesOf('AskUserQuestion', {}, sg) === null && Perm.choicesOf('ExitPlanMode', {}, sg) === null);
   const req = { tool_name: 'Bash', tool_input: { command: 'python3 -c "print(1)"' }, permission_suggestions: sg };
   const am = Perm.hookOutput('automode', req);
@@ -135,9 +137,45 @@ function writeFile(p, lines) { fs.mkdirSync(path.dirname(p), { recursive: true }
     set('node /Users/x/private/agentkanban/lib/permhook.js'); const t2 = Perm.hookTarget();
     fs.writeFileSync(process.env.RALLY_CLAUDE_SETTINGS, '{}'); const t3 = Perm.hookTarget();
     ok('★ perm: settings.json naming the shim / a checkout / nothing reads shim / other / none', t1 === 'shim' && t2 === 'other' && t3 === null);
+    fs.writeFileSync(process.env.RALLY_CLAUDE_SETTINGS, JSON.stringify({ model: 'opus', permissions: { allow: ['Bash(ls:*)'], defaultMode: 'default' } }));
+    const w1 = Perm.defaultAuto(), s1 = JSON.parse(fs.readFileSync(process.env.RALLY_CLAUDE_SETTINGS, 'utf8')), w2 = Perm.defaultAuto();
+    fs.writeFileSync(process.env.RALLY_CLAUDE_SETTINGS, '{ not json'); const w3 = Perm.defaultAuto();
+    ok('★ perm: auto モード chosen on the board becomes the default for new sessions, keeping the rest of settings.json; once only; a broken file is left alone',
+      w1 && s1.permissions.defaultMode === 'auto' && s1.model === 'opus' && s1.permissions.allow[0] === 'Bash(ls:*)' && !w2 && !w3 && fs.readFileSync(process.env.RALLY_CLAUDE_SETTINGS, 'utf8') === '{ not json');
   } finally {
     if (oh === undefined) delete process.env.RALLY_HOME; else process.env.RALLY_HOME = oh;
     if (os2 === undefined) delete process.env.RALLY_CLAUDE_SETTINGS; else process.env.RALLY_CLAUDE_SETTINGS = os2;
+  }
+}
+// 自動承認 (lib/perm.js autoAllows / permhook.js)
+{
+  const Perm = require('../lib/perm.js');
+  const { spawnSync } = require('child_process');
+  const h = fs.mkdtempSync(path.join(os.tmpdir(), 'akauto-'));
+  const env = { ...process.env, RALLY_AUTO_ALLOW: path.join(h, 'auto.json'), RALLY_AUTO_ALLOW_LOG: path.join(h, 'auto.log'), RALLY_PERM_DIR: path.join(h, 'perm'), RALLY_HOME: h, CLAUDE_CODE_ENTRYPOINT: 'cli' };
+  const o1 = process.env.RALLY_AUTO_ALLOW, o2 = process.env.RALLY_AUTO_ALLOW_LOG;
+  process.env.RALLY_AUTO_ALLOW = env.RALLY_AUTO_ALLOW; process.env.RALLY_AUTO_ALLOW_LOG = env.RALLY_AUTO_ALLOW_LOG;
+  try {
+    const bash = { tool_name: 'Bash', tool_input: { command: 'cat ~/.bashrc', description: 'シェル設定を読む' }, permission_mode: 'auto', session_id: 's1', cwd: '/p' };
+    ok('★ perm: 自動承認 is off until turned on, and then only for auto-mode sessions; questions and plans still wait',
+      !Perm.autoAllowOn() && !Perm.autoAllows(bash) && Perm.autoAllows(bash, true)
+      && !Perm.autoAllows({ ...bash, permission_mode: 'default' }, true) && !Perm.autoAllows({ ...bash, permission_mode: 'acceptEdits' }, true)
+      && !Perm.autoAllows({ ...bash, tool_name: 'AskUserQuestion' }, true) && !Perm.autoAllows({ ...bash, tool_name: 'ExitPlanMode' }, true));
+    const hook = (req) => spawnSync(process.execPath, [path.join(__dirname, '..', 'lib', 'permhook.js')], { input: JSON.stringify(req), env, encoding: 'utf8', timeout: 5000 });
+    Perm.setAutoAllow(true);
+    const r1 = hook(bash), out1 = r1.stdout ? JSON.parse(r1.stdout) : null;
+    const log = fs.existsSync(env.RALLY_AUTO_ALLOW_LOG) ? fs.readFileSync(env.RALLY_AUTO_ALLOW_LOG, 'utf8').trim().split('\n').map((l) => JSON.parse(l)) : [];
+    ok('★ perm: with 自動承認 on, the hook allows an auto-mode prompt at once and logs what it allowed and why',
+      out1 && out1.hookSpecificOutput.decision.behavior === 'allow' && log.length === 1 && log[0].what === 'cat ~/.bashrc' && log[0].why === 'シェル設定を読む' && log[0].session === 's1');
+    const rec = Perm.recentAutoAllowed();
+    ok('★ perm: the board reads back the recent auto-allows (for the after-the-fact corner notice), not old ones', rec.length === 1 && rec[0].why === 'シェル設定を読む' && Perm.recentAutoAllowed(1000, Date.now() + 3600e3).length === 0);
+    const r2 = hook({ ...bash, permission_mode: 'default' });
+    Perm.setAutoAllow(false);
+    const r3 = hook(bash);
+    ok('★ perm: a default-mode session, or 自動承認 turned off, is not allowed by it (the hook falls through, nothing printed)', r2.stdout === '' && r3.stdout === '' && Perm.hookOutput('autoallow', bash).hookSpecificOutput.decision.behavior === 'allow');
+  } finally {
+    if (o1 === undefined) delete process.env.RALLY_AUTO_ALLOW; else process.env.RALLY_AUTO_ALLOW = o1;
+    if (o2 === undefined) delete process.env.RALLY_AUTO_ALLOW_LOG; else process.env.RALLY_AUTO_ALLOW_LOG = o2;
   }
 }
 // a session that looks stuck (lib/stuck.js)
@@ -496,6 +534,7 @@ console.log('== board columns (lib/board/columns.js, what state.js lays over liv
   // a held permission prompt on its card
   ok('columns: permAskOf carries the prompt and no key it was not given',
     JSON.stringify(C.permAskOf({ id: 'p1', tool: 'Bash', what: 'ls', always: 'Bash(ls:*)', t: 5, session: 's', extra: 1 })) === JSON.stringify({ id: 'p1', tool: 'Bash', what: 'ls', always: 'Bash(ls:*)', t: 5 }));
+  ok('columns: permAskOf carries the agent\'s description when there is one', C.permAskOf({ id: 'p', tool: 'Bash', what: 'ls', t: 1, why: '一覧を見る' }).why === '一覧を見る');
   ok('columns: permAskOf — choices, partial, bg, and a subagent\'s type (subagent when it has none)', (() => {
     const p = C.permAskOf({ id: 'p', tool: 'Edit', what: 'x', t: 1, choices: ['a'], partial: true, bg: true, agent: 'ab' });
     const p2 = C.permAskOf({ id: 'p', tool: 'Edit', what: 'x', t: 1, agent: 'ab', agentType: 'Explore' });
