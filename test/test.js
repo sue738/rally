@@ -4665,6 +4665,19 @@ process.stdout.write(String(bad));\n`);
       ok('★ app: a web link opens in the browser only when clicked (a previewed page could open pages by script)', /if url\.scheme == "http" \|\| url\.scheme == "https" \{ if clicked \{ open\(url\) \}; return \.cancel \}/.test(sw));
     }
     {
+      // speed: an unchanged transcript is not parsed again for the open panel; the cards are built while `claude agents` answers
+      const LM = require('../lib/lastMessage.js'), T = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-hm-')), f = path.join(T, 's.jsonl');
+      fs.writeFileSync(f, JSON.stringify({ type: 'user', timestamp: new Date().toISOString(), message: { role: 'user', content: 'はじめ' } }) + '\n');
+      const h1 = LM.history({ agent: 'claude', id: 's', file: f }); h1.turns.push({ kind: 'user', text: 'mutated by a caller' });
+      const h2 = LM.history({ agent: 'claude', id: 's', file: f });
+      fs.appendFileSync(f, JSON.stringify({ type: 'user', timestamp: new Date(Date.now() + 1000).toISOString(), message: { role: 'user', content: 'つぎ' } }) + '\n');
+      const h3 = LM.history({ agent: 'claude', id: 's', file: f });
+      fs.rmSync(T, { recursive: true, force: true });
+      const st = fs.readFileSync(path.join(__dirname, '..', 'lib', 'board', 'state.js'), 'utf8');
+      ok('★ speed: the panel\'s history is reused while the file is unchanged (a copy: a caller cannot change it), read again once it grows; cards are built before liveness is collected; background tasks are looked up at most every 15 s',
+        h2.turns.length === 1 && h3.turns.length === 2 && st.indexOf('const allCards = Live.cards(') < st.indexOf('const live = opts.alive !== false ? Alive.sessions({ begun: asking })') && /cacheMs: 15000/.test(st));
+    }
+    {
       const PG = Board.PAGE;
       ok('★ page: the thread draws from the card as the state has it now (a prompt that came while you typed never showed, and the thread redrew every 4 s)',
         /const own=own0&&\(\(live\.cards\|\|\[\]\)\.find/.test(PG) && /keepEdit\(\)/.test(PG));
