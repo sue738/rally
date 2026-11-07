@@ -439,7 +439,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     }
 
     static func navigationPolicy(url: URL, mainFrame: Bool, clicked: Bool, isBoard: Bool, open: (URL) -> Void) -> WKNavigationActionPolicy {
-        if url.scheme == "http" || url.scheme == "https" { open(url); return .cancel }
+        // a web link goes to the browser when it was clicked: a script in a previewed .html (or anything else) navigating on
+        // its own opened pages, repeatedly, with no click
+        if url.scheme == "http" || url.scheme == "https" { if clicked { open(url) }; return .cancel }
         if isBoard && mainFrame { return .allow }
         // a clicked file link opens outside; a dropped file (not a click) is refused
         if url.isFileURL && clicked { open(url) }

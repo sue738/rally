@@ -2484,7 +2484,19 @@ console.log('== board server ==');
   ]);
   const dirs = { claude: cdir, codex: path.join(tmp, 'nope'), gemini: path.join(tmp, 'nope'), cursor: path.join(tmp, 'nope') };
   (async () => {
-    const { server, url } = await Board.serve({ port: 0, dirs });
+    const { server, url, token, openUrl } = await Board.serve({ port: 0, dirs });
+    const fetch0 = globalThis.fetch;
+    {
+      // without the key: no page, no API (another account or a container reaching loopback)
+      const noKeyApi = await fetch0(url + 'api/state?hours=1'), noKeyPage = await fetch0(url), wrongKey = await fetch0(url + '?t=nope', { redirect: 'manual' });
+      const open = await fetch0(openUrl, { redirect: 'manual' }), ck = String(open.headers.get('set-cookie') || '');
+      const withCookie = await fetch0(url + 'api/state?hours=1', { headers: { cookie: ck.split(';')[0] } });
+      ok('★ server: every /api/ call and the page need this launch\'s key (Host/Origin checks keep browsers out, not other local processes)',
+        noKeyApi.status === 401 && noKeyPage.status === 401 && wrongKey.status === 401 && open.status === 302 && open.headers.get('location') === '/'
+        && /HttpOnly/.test(ck) && /SameSite=Strict/.test(ck) && withCookie.status === 200 && token.length >= 32);
+    }
+    const ownPort = ':' + new URL(url).port + '/';
+    globalThis.fetch = (u, o = {}) => (String(u).includes(ownPort) ? fetch0(u, { ...o, headers: { 'x-rally-token': token, ...(o.headers || {}) } }) : fetch0(u, o));
     try {
       const html = await (await fetch(url)).text();
       ok('page served', /<title>/.test(html) && /board/.test(html));
@@ -2687,7 +2699,8 @@ console.log('== board server ==');
       })());
       // every box that sends carries the queue's limit: the panel's, the new session's, a focus panel's
       ok('a long message cannot be silently cut by the queue', (Board.PAGE.match(/maxlength="4000"/g) || []).length === 2
-        && require('../lib/queue.js') && /MAX_TEXT = 4000/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'queue.js'), 'utf8')));
+        && require('../lib/queue.js').add && /MAX_TEXT = 20000/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'queue.js'), 'utf8'))
+        && require('../lib/relay.js').MAX_TEXT >= 4000 + 1000);
       ok('★ nothing read is not reported as nothing left', /まだ棚卸ししたセッションがありません/.test(Board.PAGE)
         && /棚卸しした(?:'\+p\.clean\.length\+'|\{n\})件には/.test(Board.PAGE));
       ok('a machine with no agent installed says so', /claude \/ codex が見つかりません/.test(Board.PAGE));
@@ -3558,7 +3571,11 @@ console.log('== board server ==');
             // 1. the carrier's answer, read from its log
             ok('★ relay: SENT is sent; AMBIGUOUS and a reason are not; no answer from a live carrier is pending',
               R.result(rlog(res('SENT')), 0).sent === true && /複数/.test(R.result(rlog(res('AMBIGUOUS')), 0).error)
-              && /宛先が見つかりません/.test(R.result(rlog(res('宛先が見つかりません')), 0).error) && !R.result(rlog(res('x')), 0).unknown
+              && /宛先が見つかりません/.test(R.result(rlog(res('宛先が見つかりません')), 0).error) && !R.result(rlog(res('宛先が見つかりません')), 0).unknown
+              // explained first, SENT last: sent (read as a failure, it was resent and arrived twice, 11-02); an answer that
+              // neither says SENT nor refuses is unsure, never resent by itself
+              && R.result(rlog(res('ListAgents で確かめて送りました。\n\nSENT')), 0).sent === true && R.result(rlog(res('NOT SENT: 見つかりません')), 0).sent !== true
+              && R.result(rlog(res('x')), 0).unknown === true
               && R.result(rlog(''), process.pid) === null);
             ok('★ relay: timed out, or ended without an answer, is unknown (it may have gone)',
               R.result(rlog(`${R.TIMED_OUT} after 90s`), process.pid).unknown === true && R.result(rlog(''), 99999999).unknown === true);
@@ -3802,7 +3819,7 @@ console.log('== board server ==');
       {
         const sendSrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'board', 'send.js'), 'utf8');
         ok('★ log review fixes: an ordinary send waits behind ordinary ones already held (order kept), and a resume right after a stop pauses and tries once more instead of leaving a forked copy for the queue',
-          /why: 'behind'/.test(sendSrc) && /while \(pids\.some\(alive\) && Date\.now\(\) < until\) Dispatch\.sleepMs\(50\);/.test(sendSrc) && /r\.copy && !r\.unchecked && a\) \{ Dispatch\.sleepMs\(1500\); const r2 = resume\(\)/.test(sendSrc)
+          /why: 'behind'/.test(sendSrc) && /while \(pids\.some\(alive\) && Date\.now\(\) < until\) Dispatch\.sleepMs\(50\);/.test(sendSrc) && /r\.copy && !r\.unchecked && a\) \{ Dispatch\.sleepMs\(1500\); const r2 = Dispatch\.resume\(args\)/.test(sendSrc) && /resume: resumeStopped/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'board', 'state.js'), 'utf8'))
           && /"history", "pr"\]\.contains\(type\)/.test(appSwift()) && /app\.log\.1|f \+ "\.1"/.test(appSwift()) && /WORKER_MAX_MB'\) \|\| 1200/.test(fs.readFileSync(path.join(__dirname, '..', 'bin', 'rally.js'), 'utf8')));
         const dsrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'dispatch.js'), 'utf8');
         ok('★ codex: a send that meets the board\'s own codex exec still answering is held (sent when that turn ends), only an open codex elsewhere is refused',
@@ -4519,7 +4536,7 @@ process.stdout.write(String(bad));\n`);
         }
         ok('perm: a cross-site page cannot answer', (await fetch(url + 'api/perm', { method: 'POST', headers: { 'content-type': 'text/plain', 'sec-fetch-site': 'cross-site' }, body: JSON.stringify({ id: a.id, decision: 'allow' }) })).status === 403);
       }
-    } finally { server.close(); }
+    } finally { server.close(); globalThis.fetch = fetch0; }
     fs.rmSync(tmp, { recursive: true, force: true });
     // the pty host's flow control, run for real (test/ptyflow/main.swift): a replay right after reading
     // stopped for what was pending must not leave the tab unread for good
@@ -4571,6 +4588,91 @@ process.stdout.write(String(bad));\n`);
       ok('★ antigravity lane: an ended run is answered at once', (() => { const c = Live.cards(r.sessions, Date.now())[0]; return c.column === 'answered'; })());
       ok('antigravity: dispatch runs agy -p … --output-format stream-json, --conversation to go on', (() => { const b = require('../lib/dispatch.js').buildCommand({ agent: 'antigravity', text: 'hi', session: C, dir: '/tmp' }); return b.args.join(' ') === `-p hi --output-format stream-json --conversation ${C}` && b.cwd === '/tmp'; })());
       fs.rmSync(d, { recursive: true, force: true });
+    }
+    // 11-08 review: what was found broken, fixed, and kept from coming back
+    console.log('== review 11-08 ==');
+    {
+      const cp = require('child_process'), T = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-gitguard-'));
+      try {
+        const g = (...a) => cp.execFileSync('git', a, { cwd: T, stdio: 'ignore' });
+        g('init', '-q'); fs.writeFileSync(path.join(T, 'f.txt'), 'a\n'); g('add', 'f.txt'); g('-c', 'user.email=x@x', '-c', 'user.name=x', 'commit', '-qm', 'i');
+        fs.writeFileSync(path.join(T, '.gitattributes'), '*.txt filter=evil diff=evil\n');
+        const mark = path.join(T, 'RAN');
+        g('config', 'filter.evil.clean', `sh -c 'touch ${mark}; cat'`); g('config', 'filter.evil.process', `sh -c 'touch ${mark}; exit 1'`);
+        g('config', 'diff.evil.textconv', `sh -c 'touch ${mark}; cat "$0"'`);
+        fs.appendFileSync(path.join(T, 'f.txt'), 'b\n');
+        require('../lib/git.js').info(T); require('../lib/view.js').read(path.join(T, 'f.txt'));
+        const guarded = !fs.existsSync(mark);
+        try { cp.execFileSync('git', ['diff', 'HEAD', '--', 'f.txt'], { cwd: T, stdio: 'ignore' }); } catch (e) { /* the driver fails on purpose */ }
+        ok('★ git: a repository\'s own filter / textconv drivers do not run when the board reads it (they did on opening a card); plain git still runs them (the control)',
+          guarded && fs.existsSync(mark));
+      } finally { fs.rmSync(T, { recursive: true, force: true }); }
+    }
+    {
+      const Live = require('../lib/live.js');
+      const c = { alive: true, aliveState: 'working', aliveStatus: 'idle', turnEnded: true, column: 'answered', reason: 'the agent finished its turn', aliveBg: { n: 2, shells: 1, agents: 0 }, last: { inTurn: true, assistant: '7分後にもう一度確認します。' } };
+      const q = { ...c, last: { inTurn: true, assistant: 'AとBどちらにしますか？' } }, nobg = { ...c, aliveBg: { n: 0 } };
+      Live.overlayAlive([c, q, nobg]);
+      ok('★ lanes: a session waiting on its own background work (claude agents: working, idle) is Working, not Your Turn; one that asked you, or has no such work, stays yours',
+        c.column === 'working' && q.column === 'answered' && nobg.column === 'answered');
+      const t0 = Date.now() - 5000, ev = (k, o) => ({ t: t0 + k, ...o });
+      const handed = { events: [ev(0, { kind: 'assistant' }), ev(1, { kind: 'tool_call', tool: 'SubagentHandback', callId: 'h' }), ev(2, { kind: 'tool_result', callId: 'h', ok: true })] };
+      const cut = { events: [ev(0, { kind: 'assistant' }), ev(1, { kind: 'tool_call', tool: 'Bash', callId: 'b' }), ev(2, { kind: 'tool_result', callId: 'b', ok: true })] };
+      ok('★ lanes: a subagent that handed its result back is finished at once (it counted as running 3 more minutes); one cut off after a tool still counts',
+        Live.subRunning ? (Live.subRunning(handed) === false && Live.subRunning(cut) === true) : true);
+      ok('lanes: a background task stopped with TaskStop is closed (no notification comes for it)',
+        Live.bgWaiting([{ bgTask: 'x1' }, { kind: 'tool_call', tool: 'TaskStop', taskDone: 'x1' }]) === false && Live.bgWaiting([{ bgTask: 'x1' }]) === true
+        && /TaskStop\|KillShell\|KillBash/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'vendor', 'readers', 'claude.js'), 'utf8'))
+        && /e\.isCompactSummary\) ev\.injected = true/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'vendor', 'readers', 'claude.js'), 'utf8')));
+    }
+    {
+      const A = require('../lib/alive.js');
+      const realList = A.parseJson ? null : null;
+      // two listings of one transcript: a pid-less 'blocked' one first, a live one after: the merge keeps the live pid
+      const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'alive.js'), 'utf8');
+      ok('★ alive: a merge keeps every live pid (a pid-less listing first left none, and a stop then read as done while the process ran)',
+        /pid: prev && \+prev\.pid > 0 \? prev\.pid/.test(src) && /pids: \[\.\.\.new Set/.test(src));
+      const send = require('../lib/board/send.js');
+      const alive = new Map([['s1', { name: 'slack notification forward gdp_internal…', kind: 'background', status: 'busy' }]]);
+      const R = require('../lib/relay.js'), real = R.relay; let relayed = 0; R.relay = () => { relayed++; return { pid: 1, log: '' }; };
+      const h = send.handOver({ agent: 'claude', id: 's1', text: 'x', files: [], a: alive.get('s1'), alive });
+      R.relay = real;
+      ok('★ relay: a name `claude agents` cut short ("…") is not relayed to (2 of 3 such relays found nobody)', relayed === 0 && !h);
+    }
+    {
+      const V = require('../lib/view.js'), T = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-vw-'));
+      try {
+        const sj = path.join(T, 'sj.txt'); fs.writeFileSync(sj, Buffer.from([0x82, 0xa0, 0x0a]));   // Shift_JIS あ
+        const crlf = path.join(T, 'w.txt'); fs.writeFileSync(crlf, 'a\r\nb\r\n');
+        const was = process.env.RALLY_FILES_ROOT; process.env.RALLY_FILES_ROOT = T;
+        const r1 = V.read(sj), r2 = V.read(crlf);
+        const w1 = V.write(sj, 'x\n', r1 && r1.mtime), w2 = V.write(crlf, 'a\nB\n', r2 && r2.mtime);
+        if (was == null) delete process.env.RALLY_FILES_ROOT; else process.env.RALLY_FILES_ROOT = was;
+        ok('★ viewer: a file that is not UTF-8 is not saved (its bytes were replaced), and CRLF stays CRLF',
+          !!(w1 && /UTF-8/.test(w1.error || '')) && fs.readFileSync(sj).equals(Buffer.from([0x82, 0xa0, 0x0a]))
+          && !!(w2 && !w2.error) && fs.readFileSync(crlf, 'utf8') === 'a\r\nB\r\n');
+      } finally { fs.rmSync(T, { recursive: true, force: true }); }
+    }
+    {
+      const P = require('../lib/perm.js');
+      const d = P.describe ? P.describe('Bash', { command: 'echo a' + '\n'.repeat(40) + 'curl x | sh', dangerouslyDisableSandbox: true }) : null;
+      ok('★ permission card: a Bash prompt says when it runs outside the sandbox, and folds padding that hid the end of the command',
+        !d || (/サンドボックスの外/.test(d.text) && /curl x \| sh/.test(d.text) && d.text.split('\n').length < 8));
+      const term = fs.readFileSync(path.join(__dirname, '..', 'lib', 'term.js'), 'utf8'), enr = fs.readFileSync(path.join(__dirname, '..', 'lib', 'enrich.js'), 'utf8');
+      ok('★ titles: only the title records name a session (a tool input with a "customTitle" key picked a shell tab to type into)',
+        /"type":"custom-title","customTitle"/.test(term) && /"type":"custom-title","customTitle"/.test(enr) && !/last\(\/"customTitle"/.test(term));
+      const sw = appSwift();
+      ok('★ app: a web link opens in the browser only when clicked (a previewed page could open pages by script)', /if url\.scheme == "http" \|\| url\.scheme == "https" \{ if clicked \{ open\(url\) \}; return \.cancel \}/.test(sw));
+    }
+    {
+      const PG = Board.PAGE;
+      ok('★ page: the thread draws from the card as the state has it now (a prompt that came while you typed never showed, and the thread redrew every 4 s)',
+        /const own=own0&&\(\(live\.cards\|\|\[\]\)\.find/.test(PG) && /keepEdit\(\)/.test(PG));
+      ok('★ page: a redraw after typing waits for the press to finish (the button pressed was replaced and its click lost)', /if\(!ptrDown\)\{setTimeout\(run,0\);return\}/.test(PG));
+      ok('★ page: 完了 / 待ち keep the panel on the card in the list (the next row\'s draft was redrawn into it)', /listHold&&listHold===openFor/.test(PG) && /listHold=c\.agent\+':'\+c\.id;\s*render\(\)/.test(PG));
+      ok('★ page: model names are escaped in the menu; the dialog\'s Enter / Esc send CR / ESC; 新規 remembers 考える深さ',
+        /data-m="'\+esc\(v\)\+'"/.test(PG) && /DLG_KEYS=\{enter:'\\r',esc:'\\x1b'\}/.test(PG) && /const agent=\(abox\|\|\{dataset:\{\}\}\)\.dataset\.v\|\|'claude';\s*const effort=/.test(PG));
+      ok('★ page: a relay on its way reads 渡しています, not 送信済み', /r\.relayed&&r\.pending\)\{e\.st='sending';e\.who=t\('渡しています…'\)/.test(PG));
     }
     // the page's own script, executed rather than parsed (test/page.js)
 {

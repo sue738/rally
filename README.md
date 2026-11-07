@@ -50,8 +50,9 @@ anywhere; closing the window parks it instead of quitting. *Start at Login* is i
 menu. The UI is in English or Japanese: it follows the system language, and ⚙ → **English / 日本語** switches it.
 
 To answer Claude Code permission prompts from Rally, add its hook to
-`~/.claude/settings.json` yourself (Rally never edits that file; the app keeps
-`~/.rally/bin/permhook` pointing at its own copy):
+`~/.claude/settings.json` yourself (Rally adds no hooks there; the one change it makes to that file is
+`permissions.defaultMode: "auto"`, when you choose auto mode for every session from the board). The app keeps
+`~/.rally/bin/permhook` pointing at its own copy:
 
 ```json
 "hooks": { "PermissionRequest": [{ "matcher": "*", "hooks": [{ "type": "command",
@@ -145,12 +146,14 @@ on disk.
 ## Privacy
 
 - No account, no telemetry, no server of ours. The app listens on no port; it runs
-  `node rally.js state` once per refresh. The CLI's browser server binds to 127.0.0.1
-  and refuses other Hosts and cross-site requests.
+  `node rally.js state` once per refresh. The CLI's browser server binds to 127.0.0.1,
+  refuses other Hosts and cross-site requests, and answers only with the key in the URL it
+  opens (kept by the page as a cookie), so another account or a container reaching loopback cannot use it.
 - **Read:** the agents' transcripts (`~/.claude`, `~/.codex`, Gemini's and Cursor's
   stores), `claude agents --json`, and the rate limits Claude Code hands the status line (when set up above).
 - **Written:** Rally's own files under `~/.rally/` (backlog, queue, run logs,
-  attachments, caches). An agent is only written to when you send, start or finish.
+  attachments, caches; the folder is yours only). An agent is only written to when you send, start or finish.
+  Board-run git commands turn off a repository's own filter and textconv drivers, so opening a card never runs them.
 - **Update check:** once a day the app asks GitHub for this repository's latest release
   (`api.github.com/repos/sue738/rally/releases/latest`, with the app's version as its User-Agent). A newer one shows
   in the Rally menu and as one notification; nothing is downloaded. `RALLY_NO_UPDATE_CHECK=1` turns it off.

@@ -275,6 +275,8 @@ async function main() {
   const o = parseArgs(process.argv);
   // a data directory under an older name is moved to ~/.rally first (lib/paths.js migrate)
   Paths.migrate();
+  // ~/.rally holds your prompts (run logs), attachments and held messages: yours only (it was 755, readable by the group)
+  try { const fs0 = require('fs'), d = Paths.akHome(); fs0.mkdirSync(d, { recursive: true }); if ((fs0.statSync(d).mode & 0o077) !== 0) fs0.chmodSync(d, 0o700); } catch (e) { /* not ours to fix */ }
   if (o.command === 'now') return cmdNow(o);
   if (o.command === 'worker') return cmdWorker();
   if (o.command === 'state') {
@@ -564,13 +566,14 @@ async function main() {
       if (named && o.fork) require('../lib/forks.js').set(named, o.fork);
       return process.stdout.write(Text.json({ ok: true, pid: r.pid, log: r.log, argv: r.argv,
         ...(r.queued ? { queued: true, why: r.why, ...(r.to ? { to: r.to } : {}) } : {}), ...(r.woke ? { woke: true } : {}),
-        ...(r.relayed ? { relayed: true, to: r.to } : {}), ...(r.typed ? { typed: true, to: r.to } : {}),
+        ...(r.relayed ? { relayed: true, to: r.to, ...(r.pending ? { pending: true } : {}) } : {}), ...(r.typed ? { typed: true, to: r.to } : {}),
         ...(named ? { session: named } : {}), ...(started && started.short ? { short: started.short, agent: o.agentName } : {}) }));
     } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }
   }
   if (o.command !== 'serve') { console.error(L(`unknown command "${o.command}"`, `不明なコマンド "${o.command}"`)); console.log(HELP); process.exit(2); }
   const r = await Board.serve({ port: o.port, hours: o.hours, only: o.only, dirs: o.dirs });
-  const url = r.url;
+  // the URL with this launch's key (lib/board/server.js): the page keeps it as a cookie
+  const url = r.openUrl || r.url;
   console.log(L(`${NAME} → ${url}   (Ctrl-C to stop; reads transcripts on each refresh, writes only ~/.${NAME}/)`, `${NAME} → ${url}   (Ctrl-C で終了。更新のたびに転記を読むだけ。書くのは ~/.${NAME}/ のみ)`));
   if (!o.noOpen && process.platform === 'darwin') { try { require('child_process').spawn('open', [url], { stdio: 'ignore', detached: true }).unref(); } catch (e) { /* no browser */ } }
 }
