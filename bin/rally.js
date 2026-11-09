@@ -39,7 +39,7 @@ Usage:
   ${NAME} queue --as claude --session ID [--text "…" | --cancel [--key K] | --now --key K]  hold a message, take it back, or send one held message now
   ${NAME} wip                  what is still open in the sessions that were read (the ${tr('残作業')} view)
   ${NAME} wip --all [--limit N] [--hours H]   read the half-finished ones that were never read (default 10)
-  ${NAME} wip --as claude --session ID   read the tail and cache what is still open (what ${tr('棚卸し')} does)
+  ${NAME} wip --as claude --session ID   read the tail and cache what is still open (what ${tr('やり残しを調べる')} does)
   ${NAME} autoallow [--on | --off]   自動承認: allow at once what auto mode still asks you (auto-mode sessions only; questions and plans still wait; logged)
   ${NAME} lanehours [--stale H --done H]   hours of quiet before a card moves to Waiting, then to Completed (default 24 / 72); with neither, what is set
   ${NAME} bgtasks [--stop JSON | --on | --off]   stop background tasks of live sessions (each re-checked first), or turn the automatic stop of stale wait loops on / off
@@ -480,9 +480,9 @@ async function main() {
     const Wip = require('../lib/wip.js');
     const limit = Number.isFinite(o.limit) && o.limit > 0 ? o.limit : 10;
     const cand = Board.wipCandidates({ hours: o.hours || 24, only: o.only, dirs: o.dirs }).slice(0, limit);
-    if (!cand.length) return console.log(L('nothing left to read in this window', 'この範囲に未棚卸しのセッションはありません'));
+    if (!cand.length) return console.log(L('nothing left to read in this window', 'この範囲に未確認のセッションはありません'));
     console.log(L(`reading ${n(cand.length)} sessions, ${Wip.MAX_RUNNING} at a time (one model call each)`,
-      `${n(cand.length)}件を棚卸しします(${Wip.MAX_RUNNING}件ずつ・1件につきモデルを1回呼びます)`));
+      `${n(cand.length)}件を調べます(${Wip.MAX_RUNNING}件ずつ・1件につきモデルを1回呼びます)`));
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     let withWork = 0, clean = 0, failed = 0;
     for (let i = 0; i < cand.length; i += Wip.MAX_RUNNING) {
@@ -520,15 +520,15 @@ async function main() {
     if (o.json) return console.log(Text.json(open.map((c) => ({ agent: c.agent, id: c.id, title: c.title, project: c.project, ...c.wip }))));
     // counted as the board's 残作業 page does (pendCounts): the sessions a reading is for
     const unread = st.cards.filter((c) => !c.wip && !c.subagent && !c.headless && (c.agent === 'claude' || c.agent === 'codex') && c.column !== 'done' && c.column !== 'working').length;
-    console.log(L(`${NAME} — what is still open (${n(open.length)} of ${n(cards.length)} read sessions)`, `${NAME} — 残作業(棚卸し済み ${n(cards.length)}件中 ${n(open.length)}件に残あり)`));
+    console.log(L(`${NAME} — what is still open (${n(open.length)} of ${n(cards.length)} read sessions)`, `${NAME} — 残作業(確認済み ${n(cards.length)}件中 ${n(open.length)}件に残あり)`));
     for (const c of open) {
       console.log(`\n  ${c.title || short(c.project)}  ${c.agent} …${c.id.slice(-8)}`);
       for (const r of c.wip.remaining) console.log(`    - ${r.what}${r.evidence ? `  (${r.evidence})` : ''}`);
       for (const b of c.wip.blocked || []) console.log(L(`    ! waiting on you: ${b}`, `    ! 判断待ち: ${b}`));
     }
-    if (!open.length) console.log(L('  nothing left in the sessions that were read', '  棚卸し済みのセッションに残っていることはありません'));
+    if (!open.length) console.log(L('  nothing left in the sessions that were read', '  確認済みのセッションに残っていることはありません'));
     if (unread) console.log(L(`\n  ${n(unread)} sessions not read yet — ${NAME} wip --as claude --session ID reads one (a model call, ~30s)`,
-      `\n  未棚卸し ${n(unread)}件 — ${NAME} wip --as claude --session ID で1件読みます(モデルを呼びます・30秒ほど)`));
+      `\n  未確認 ${n(unread)}件 — ${NAME} wip --as claude --session ID で1件読みます(モデルを呼びます・30秒ほど)`));
     return;
   }
   if (o.command === 'wip') {

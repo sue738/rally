@@ -2750,8 +2750,8 @@ console.log('== board server ==');
       ok('a long message cannot be silently cut by the queue', (Board.PAGE.match(/maxlength="4000"/g) || []).length === 2
         && require('../lib/queue.js').add && /MAX_TEXT = 20000/.test(fs.readFileSync(path.join(__dirname, '..', 'lib', 'queue.js'), 'utf8'))
         && require('../lib/relay.js').MAX_TEXT >= 4000 + 1000);
-      ok('★ nothing read is not reported as nothing left', /まだ棚卸ししたセッションがありません/.test(Board.PAGE)
-        && /棚卸しした(?:'\+p\.clean\.length\+'|\{n\})件には/.test(Board.PAGE));
+      ok('★ nothing read is not reported as nothing left', /まだ確認したセッションがありません/.test(Board.PAGE)
+        && /確認した(?:'\+p\.clean\.length\+'|\{n\})件には/.test(Board.PAGE));
       ok('a machine with no agent installed says so', /claude \/ codex が見つかりません/.test(Board.PAGE));
       ok('完了 says what it is about to do, before it is pressed', /id="dodone"[^>]*title="[^"]*何も送りません/.test(Board.PAGE));
       ok('★ cards and 残作業 items are reachable by Tab and open with Enter',
@@ -2892,7 +2892,7 @@ console.log('== board server ==');
           && /o\.appendChild\(b\)/.test(Board.PAGE) && /function termBottom/.test(Board.PAGE);
       })());
       ok('★ 残作業 is shown per card and gathered in one view', /function pendLine/.test(Board.PAGE) && /openPendingAll/.test(Board.PAGE) && /id="pendall"/.test(Board.PAGE));
-      ok('a session no one has read says 未確認, never 残作業なし', /const pSum=!p\?(?:t\()?'未確認'/.test(Board.PAGE) && /未棚卸し/.test(Board.PAGE));
+      ok('a session no one has read says 未確認, never 残作業なし', /const pSum=!p\?(?:t\()?'未確認'/.test(Board.PAGE) && /未確認/.test(Board.PAGE));
       ok('★ 残作業 is one button (count, age, 棚卸し on it; open only while you have it open on that session); 待ち / 完了 sit on the title row, kept in every view of the panel',
         /<details class="pendbox"'\+\(pOpen&&pInner\?' open':''\)/.test(Board.PAGE) && /pendOpenKey=pb\.open\?/.test(Board.PAGE) && !/'pendopen'/.test(Board.PAGE)
         && /<button id="pscan" class="mini tflag"/.test(Board.PAGE) && /<button id="dodone" class="mini tlb primary"/.test(Board.PAGE) && !/class="donebox/.test(Board.PAGE));

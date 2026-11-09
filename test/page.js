@@ -1127,21 +1127,21 @@ console.log('== today\'s features, by what they do ==');
     const pc = api.pendCounts(cards);
     api.openPendingAll();
     const h = api.body().innerHTML, t = api.document.querySelector('#mtitle').textContent;
-    ok('★ 残作業: the header chip and the page count the same thing (items left in the sessions read)', chip === '4' && pc.items === 4 && t === '残作業 4件 — 2セッション' && /「残作業 4」は、棚卸し済みのセッションに残っている<b>項目の数<\/b>/.test(h));
-    ok('★ 残作業: 未棚卸し are the sessions a reading is for — not at work, not closed, not subagents, not other agents; 放置 first',
-      pc.unread.map((c) => c.id).join() === 'u1,u4,u2,u3' && /未棚卸し <b>4<\/b>/.test(h));
-    ok('★ 残作業: a session with items opens its panel, each item has 実行 / やめる; each unread one has 棚卸しする',
-      (h.match(/class="mini popen"/g) || []).length === 3 && (h.match(/class="mini pgo"/g) || []).length === 4 && (h.match(/<div class="prow" data-agent="claude" data-id="u\d"><span class="pt">[^]*?class="mini pscan1">棚卸しする</g) || []).length === 4);
+    ok('★ 残作業: the header chip and the page count the same thing (items left in the sessions read)', chip === '4' && pc.items === 4 && t === '残作業 4件 — 2セッション' && /「残作業 4」は、確認済みのセッションに残っている<b>項目の数<\/b>/.test(h));
+    ok('★ 残作業: 未確認 are the sessions a reading is for — not at work, not closed, not subagents, not other agents; 放置 first',
+      pc.unread.map((c) => c.id).join() === 'u1,u4,u2,u3' && /未確認 <b>4<\/b>/.test(h));
+    ok('★ 残作業: a session with items opens its panel, each item has 実行 / やめる; each unread one has やり残しを調べる',
+      (h.match(/class="mini popen"/g) || []).length === 3 && (h.match(/class="mini pgo"/g) || []).length === 4 && (h.match(/<div class="prow" data-agent="claude" data-id="u\d"><span class="pt">[^]*?class="mini pscan1">やり残しを調べる</g) || []).length === 4);
     ok('★ 残作業: まとめて takes only what may run at once (3 − the 1 running = 2), and says each is a model call',
-      /id="pscanall" class="mini" data-n="2"[^>]*>まとめて棚卸し\(2件\)</.test(h) && /1件ごとにモデル\(sonnet\)を呼びます/.test(h));
-    ok('★ 残作業: at it / failed are listed (failed can go again); 残りなし is folded', /棚卸し中…/.test(h) && /class="bad"[^>]*>失敗<\/span><button class="mini pscan1"/.test(h) && /<details class="pdone"><summary class="dim">残りなし 1件<\/summary>/.test(h) && !/<details class="pdone" open/.test(h));
+      /id="pscanall" class="mini" data-n="2"[^>]*>まとめて調べる\(2件\)</.test(h) && /1件ごとにモデル\(sonnet\)を呼びます/.test(h));
+    ok('★ 残作業: at it / failed are listed (failed can go again); 残りなし is folded', /確認中…/.test(h) && /class="bad"[^>]*>失敗<\/span><button class="mini pscan1"/.test(h) && /<details class="pdone"><summary class="dim">残りなし 1件<\/summary>/.test(h) && !/<details class="pdone" open/.test(h));
     const n0 = api.fetched.length;
     api.wipStart(cards[3]);
     const sent = api.fetched.slice(n0).map((x) => [x[0], JSON.parse(x[1].body)]);
-    ok('残作業: 棚卸しする posts one reading of that session and marks it running', sent.length === 1 && sent[0][0] === 'api/wip' && sent[0][1].session === 'u1' && !('drop' in sent[0][1]) && cards[3].wip.status === 'running');
+    ok('残作業: 調べる posts one reading of that session and marks it running', sent.length === 1 && sent[0][0] === 'api/wip' && sent[0][1].session === 'u1' && !('drop' in sent[0][1]) && cards[3].wip.status === 'running');
     api.applyState({ cards: cards.map((c) => ({ ...c, wip: c.id === 'r1' ? { status: 'running', at: now } : c.wip })).concat([w('r2', { wip: { status: 'running', at: now } }), w('r3', { wip: { status: 'running', at: now } })]), agents: [], hours: 24, collisions: [] });
     api.openPendingAll();
-    ok('★ 残作業: with three at it no more can start — no まとめて, each 棚卸しする disabled', !/id="pscanall"/.test(api.body().innerHTML) && /class="mini pscan1" disabled/.test(api.body().innerHTML));
+    ok('★ 残作業: with three at it no more can start — no まとめて, each 調べる disabled', !/id="pscanall"/.test(api.body().innerHTML) && /class="mini pscan1" disabled/.test(api.body().innerHTML));
     api.closeDetail('x');
   } catch (e) { ok('残作業 page — ' + e.stack.split('\n').slice(0, 3).join(' | '), false); }
   // 定期実行: when next, what it said, and what can be done to a job of yours

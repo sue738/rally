@@ -34,7 +34,7 @@ try{
     const n=+sa.dataset.n;sa.click();await sleep(30);
     const sent=asked.filter(m=>m.type==='wip').length-n0;out.sent=sent;
     expect('the second press starts that many readings, no more',sent===n);
-    expect('… and the page shows them at it',/棚卸し中/.test($('#plisth').textContent));
+    expect('… and the page shows them at it',/確認中/.test($('#plisth').textContent));
     await sleep(3000);
   }
   // 開く: the session's own panel
