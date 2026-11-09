@@ -157,6 +157,13 @@ header #jobsbtn.on{color:var(--fg);background:var(--hover)}
 .codeblk .cpy.done svg{display:none}
 .codeblk .cpy.done::after{content:"✓";font-size:13px}
 @media (hover:none){.codeblk .cpy{opacity:1}}
+/* ▶ 実行 beside a ! command in an answer (13-bangrun.js): always shown, beside the copy button on a code block */
+.bangrun{font:inherit;font-size:var(--fs-meta);line-height:1.6;margin-left:5px;padding:0 7px;border:1px solid color-mix(in srgb,var(--info) 55%,var(--line));border-radius:5px;background:color-mix(in srgb,var(--info) 10%,var(--card));color:var(--info);cursor:pointer;white-space:nowrap;vertical-align:baseline}
+.bangrun:hover{background:color-mix(in srgb,var(--info) 20%,var(--card))}
+.bangrun:disabled{opacity:.6;cursor:default}
+.bangrun.done{color:var(--ok);border-color:var(--ok);background:transparent;opacity:1}
+.codeblk.bang .bangrun{position:absolute;top:6px;right:38px;z-index:1;height:24px;margin:0}
+.turn .md .codeblk.bang pre{padding-right:118px}
 
 .jobs{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .card .cgoal{flex:none;color:var(--info);font-size:var(--fs-micro);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis}

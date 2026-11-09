@@ -36,6 +36,7 @@ The files are split by feature, but they are not modules:
 | `07-panel-hist.js` | the panel's conversation range picker, what is drawn or re-read when the panel opens |
 | `09-pr.js` | the branch / pull request row: merge and clean up |
 | `12-thread.js` | `historyHtml` / `renderHistory`: drawing the conversation |
+| `13-bangrun.js` | ▶ 実行 beside a `! command` in an answer: typed into the session's terminal in bash mode, as a `!` from the message box is |
 | `15-attach.js` | attachments: paste, drop, upload, chips |
 | `18-compose.js` | the message box: skills picker, auto-grow, sent history, @file completion, drop on the panel |
 | `21-reply.js` | echo of a send, replying to one message, the thinking indicator and spinner |

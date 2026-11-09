@@ -101,6 +101,9 @@ a bill (`$?` when a model has no known rate; none for Codex).
   - **Send after this work**: the message is held until the
     session is next idle, one per idle turn, in order. ⌥⏎ flips it for one send.
   - ⌘C (with nothing selected) takes back what you just sent.
+  - A message starting with `!` runs in the session's bash mode, and a `! command` the agent suggests in its
+    answer carries **▶ Run**: one click types it into the session's terminal (opened or resumed in the panel if need be),
+    and its output lands in the conversation.
 - **Use the session's real terminal.** A Claude card's panel opens on `claude attach`
   for a background session, or **Resume here** for one that is not running.
   Codex and Antigravity sessions reopen with `codex resume` / `agy --conversation`.
