@@ -45,7 +45,7 @@ git clone https://github.com/sue738/rally && cd rally && node bin/rally.js
 ## First run
 
 Open Rally. It reads sessions touched in the last 24 hours, and the last 7 days while
-**Completed** is shown (**+** / **−** widen or narrow that) and refreshes on its own. **⌥⌘K** shows or hides the window from
+**Completed** is shown (**+** / **−** widen or narrow that), plus any card still in Your Turn or Waiting, and refreshes on its own. **⌥⌘K** shows or hides the window from
 anywhere; closing the window parks it instead of quitting. *Start at Login* is in the app
 menu. The UI is in English or Japanese: it follows the system language, and ⚙ → **English / 日本語** switches it.
 
@@ -76,9 +76,9 @@ Codex's allowance needs nothing: it is in Codex's own session logs.
 | lane | what is in it |
 |---|---|
 | **Your Turn** | waiting on you: a permission prompt or a question, a session that finished its turn, or one where you spoke last and nothing followed; in time order (the header flips oldest or newest first) |
-| **Waiting** | quiet for 6–24 hours. Not finished, just possibly forgotten |
+| **Waiting** | quiet for 1–3 days. Not finished, just possibly forgotten (⚙ → **When cards move lanes** changes both times) |
 | **Working** | wrote within the last minute, has a subagent still running, or `claude agents` says it is busy |
-| **Completed** | sessions you marked done, anything quiet for over a day, one-shot and machine-started runs. Hidden until you turn on **Completed** in the header |
+| **Completed** | sessions you marked done, anything quiet for over 3 days, one-shot and machine-started runs. Hidden until you turn on **Completed** in the header |
 
 The lane comes from each session's last transcript entries and its subagents', corrected
 by the live process state from `claude agents --json`. A card entering Your Turn raises a

@@ -41,6 +41,7 @@ Usage:
   ${NAME} wip --all [--limit N] [--hours H]   read the half-finished ones that were never read (default 10)
   ${NAME} wip --as claude --session ID   read the tail and cache what is still open (what ${tr('棚卸し')} does)
   ${NAME} autoallow [--on | --off]   自動承認: allow at once what auto mode still asks you (auto-mode sessions only; questions and plans still wait; logged)
+  ${NAME} lanehours [--stale H --done H]   hours of quiet before a card moves to Waiting, then to Completed (default 24 / 72); with neither, what is set
   ${NAME} bgtasks [--stop JSON | --on | --off]   stop background tasks of live sessions (each re-checked first), or turn the automatic stop of stale wait loops on / off
   ${NAME} done --as claude --session ID [--memory]  close a session (--memory: ask it to save what it learned)
 
@@ -107,6 +108,8 @@ function parseArgs(argv) {
     else if (a === '--cancel') o.cancel = true;
     else if (a === '--park') o.park = true;
     else if (a === '--on') o.on = true;
+    else if (a === '--stale') o.staleH = +argv[++i];
+    else if (a === '--done') o.doneH = +argv[++i];
     else if (a === '--off') o.off = true;
     else if (a === '--retry') o.retry = true;
     else if (a === '--edit') o.edit = true;
@@ -347,6 +350,17 @@ async function main() {
     const P = require('../lib/perm.js');
     if (o.on || o.off) return process.stdout.write(Text.json(P.setAutoAllow(!!o.on)));
     return process.stdout.write(Text.json({ on: P.autoAllowOn(), log: P.autoAllowLog() }));
+  }
+  if (o.command === 'lanehours') {
+    // how long a quiet card takes to move to Waiting, then to Completed (lib/lanehours.js); with neither, what is set
+    const L = require('../lib/lanehours.js');
+    if (o.staleH != null || o.doneH != null) {
+      const cur = L.read();
+      const r = L.write(o.staleH != null ? o.staleH : cur.staleH, o.doneH != null ? o.doneH : cur.doneH);
+      if (!r.ok) process.exitCode = 2;
+      return process.stdout.write(Text.json(r));
+    }
+    return process.stdout.write(Text.json(L.read()));
   }
   if (o.command === 'bgtasks') {
     // one shot for the app: 裏で実行中's list; --stop re-checks each first (same parent, same command line)

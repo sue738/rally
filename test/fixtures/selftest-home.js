@@ -19,7 +19,7 @@
  *   lane (as the board classifies it)       session
  *   Your Turn (asked you something)         beta, 12 min ago
  *   Your Turn (answered)                    alpha (long, tools), gamma, epsilon (a subagent), zeta, eta
- *   放置 (quiet for hours)                  delta 7h, home (begun in the home folder) 8h
+ *   放置 (quiet for over a day)             delta 30h, home (begun in the home folder) 32h
  */
 const fs = require('fs');
 const path = require('path');
@@ -119,13 +119,13 @@ session('eta', W('delta'), 90, [
   { user: 'selftest: eta の型エラーを直して', tools: [{ name: 'Bash', input: { command: 'tsc' }, out: 'error TS2322', error: true }, { name: 'Edit', input: { file_path: path.join(W('delta'), 'a.ts'), old_string: 'x', new_string: 'y' } }], said: '型エラーを直しました。' },
   { user: 'ビルドも確認して', tools: [{ name: 'Bash', input: { command: 'tsc' }, out: '' }], said: 'ビルドは通りました。' },
 ]);
-// quiet for hours: 放置
-session('delta', W('delta'), 7 * 60, [
+// quiet for over a day (Waiting from 24h, lib/lanehours.js): 放置
+session('delta', W('delta'), 30 * 60, [
   { user: 'selftest: delta の移行計画を立てて', said: '計画の下書きです。' },
   { user: '続けて', tools: [{ name: 'Bash', input: { command: 'git log --oneline' }, out: 'abc' }], said: '途中まで進めました。' },
 ]);
 // begun in the home folder (Claude will not run it in the background)
-session('home', home, 8 * 60, [
+session('home', home, 32 * 60, [
   { user: 'selftest: ホームで始めた会話', said: 'はい。' },
   { user: 'もう一つ', tools: [{ name: 'Bash', input: { command: 'ls' }, out: 'Library' }], said: '見ました。' },
 ]);

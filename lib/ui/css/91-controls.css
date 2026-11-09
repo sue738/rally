@@ -66,6 +66,9 @@ button.mini.toggle.tflag[hidden]{display:none}
 .cspop{position:absolute;right:0;top:calc(100% + 6px);z-index:8;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:230px;padding:8px;
   background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-hi)}
 .cspop[hidden]{display:none}
+.cspop.lanepop{position:fixed;left:auto;z-index:100000;min-width:0;gap:4px}
+.lanepop .lrow{padding:0 6px 6px}
+.lanepop .chips button:disabled{opacity:.35;cursor:default}
 .cspop .csh{font-size:var(--fs-meta);color:var(--dim);letter-spacing:.04em;padding:2px 6px 4px}
 .cspop button.mini.toggle.tflag{justify-content:flex-start;border:0;background:transparent;padding:5px 6px;text-align:left}
 .cspop button.mini.toggle.tflag:hover{background:var(--hover)}

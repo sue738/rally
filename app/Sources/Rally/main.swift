@@ -1120,6 +1120,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             let on = (body["on"] as? Bool) == true
             if selftesting { notified.append(["key": "autoallow", "title": on ? "on" : "off", "body": ""]); return }
             actQueue.async { _ = self.runNode(["autoallow", on ? "--on" : "--off"]) }
+        case "lanehours":
+            // ⚙ → 列が移るまでの時間 (lib/lanehours.js): hours of quiet before Waiting, then Completed; the page reloads on the answer
+            guard let stale = (body["staleH"] as? NSNumber)?.intValue, let done = (body["doneH"] as? NSNumber)?.intValue,
+                  (1...720).contains(stale), (1...720).contains(done) else { return }
+            actQueue.async {
+                let (out, _) = self.runNode(["lanehours", "--stale", String(stale), "--done", String(done)])
+                self.logLine(["ev": "lanehours", "out": String(out.prefix(200))])
+                self.call("window.__kanban.laneHours&&window.__kanban.laneHours(\((try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil ? out : "{}"))")
+            }
         case "bgauto":
             // the automatic stop of wait loops left looping (lib/bgtasks.js reap), on or off
             let on = (body["on"] as? Bool) == true

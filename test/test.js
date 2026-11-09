@@ -669,14 +669,38 @@ console.log('== live classification (board columns) ==');
   }
   const q = mk4([{ t: now - 300000, kind: 'tool_call', tool: 'AskUserQuestion', callId: 'q' }]);
   ok('question: AskUserQuestion pending reads as a question', /question/.test(Live.classify(q, now).reason));
-  ok('★ a conversation quiet for 7h is 放置, not done — time passing is not completion', (() => {
+  ok('★ a conversation quiet for 7h is still yours — Waiting starts after a day (lib/lanehours.js)', (() => {
     const c = Live.classify(mk4([{ t: now - 8 * 3600000, kind: 'user', human: true }, { t: now - 7 * 3600000, kind: 'assistant', chars: 20 }, { t: now - 7 * 3600000 + 1000, kind: 'tool_call', tool: 'Bash', callId: 'b1' }, { t: now - 7 * 3600000 + 2000, kind: 'tool_result', callId: 'b1', ok: true }]), now);
-    return c.column === 'stale' && c.waiting === 'you' && /quiet for 7h/.test(c.reason);
+    return c.column === 'answered';
   })());
-  ok('★ past a day it really is done — 放置 is one lane, not a graveyard', (() => {
-    const c = Live.classify(mk4([{ t: now - 30 * 3600000, kind: 'user', human: true }, { t: now - 26 * 3600000, kind: 'assistant', chars: 20 }, { t: now - 26 * 3600000 + 1000, kind: 'tool_call', tool: 'Bash', callId: 'z1' }]), now);
-    return c.column === 'idle' && /abandoned after 26h/.test(c.reason);
+  ok('★ a conversation quiet for 30h is 放置, not done — time passing is not completion', (() => {
+    const c = Live.classify(mk4([{ t: now - 31 * 3600000, kind: 'user', human: true }, { t: now - 30 * 3600000, kind: 'assistant', chars: 20 }, { t: now - 30 * 3600000 + 1000, kind: 'tool_call', tool: 'Bash', callId: 'b1' }, { t: now - 30 * 3600000 + 2000, kind: 'tool_result', callId: 'b1', ok: true }]), now);
+    return c.column === 'stale' && c.waiting === 'you' && /quiet for 30h/.test(c.reason);
   })());
+  ok('★ past three days it really is done — 放置 is one lane, not a graveyard', (() => {
+    const c = Live.classify(mk4([{ t: now - 80 * 3600000, kind: 'user', human: true }, { t: now - 76 * 3600000, kind: 'assistant', chars: 20 }, { t: now - 76 * 3600000 + 1000, kind: 'tool_call', tool: 'Bash', callId: 'z1' }]), now);
+    return c.column === 'idle' && /abandoned after 76h/.test(c.reason);
+  })());
+  ok('★ the hours set in ⚙ move the lanes: Waiting after 6h, Completed after 12h', (() => {
+    const s = mk4([{ t: now - 8 * 3600000, kind: 'user', human: true }, { t: now - 7 * 3600000, kind: 'assistant', chars: 20 }, { t: now - 7 * 3600000 + 1000, kind: 'tool_call', tool: 'Bash', callId: 'b2' }, { t: now - 7 * 3600000 + 2000, kind: 'tool_result', callId: 'b2', ok: true }]);
+    return Live.classify(s, now, { staleH: 6, doneH: 12 }).column === 'stale' && Live.classify(s, now, { staleH: 2, doneH: 6 }).column === 'idle';
+  })());
+  {
+    // ⚙ → 列が移るまでの時間: saved in RALLY_HOME, read back, and a Completed time below the Waiting one refused
+    const L = require('../lib/lanehours.js');
+    const prev = process.env.RALLY_HOME, h = fs.mkdtempSync(path.join(require('os').tmpdir(), 'lanehours-'));
+    process.env.RALLY_HOME = h;
+    try {
+      const d0 = L.read();
+      const w = L.write(12, 48), r1 = L.read();
+      const bad = L.write(48, 24), r2 = L.read();
+      fs.writeFileSync(L.file(), JSON.stringify({ staleH: 'x', doneH: 5000 }));
+      const r3 = L.read();
+      ok('★ lane hours: 24h / 72h by default, saved and read back, a Completed time shorter than Waiting refused, junk falls back',
+        d0.staleH === 24 && d0.doneH === 72 && w.ok && r1.staleH === 12 && r1.doneH === 48 && !bad.ok && r2.staleH === 12 && r2.doneH === 48
+        && r3.staleH === 24 && r3.doneH === 72);
+    } finally { if (prev === undefined) delete process.env.RALLY_HOME; else process.env.RALLY_HOME = prev; fs.rmSync(h, { recursive: true, force: true }); }
+  }
   // a permission prompt does not expire: two background sessions whose
   // process said "waiting for permission prompt" were sitting in 放置
   ok('★ a permission prompt left up for 8h is still あなた待ち(許可), not 放置', (() => {
@@ -2984,7 +3008,9 @@ console.log('== board server ==');
           L.overlayAlive(cs);
           ok('★ 完了 does not come back because its process is at work (a notification, a peer, a wake-up): only a message from you reopens it',
             cs[0].column === 'done' && cs[1].column === 'done' && cs[2].column === 'done' && cs[3].column === 'done');
-          ok('★ a live session stays on the board past the time window', /now - c\.lastT < hours \* 3600000 \|\| \(live && live\.has\(c\.id\)\)/.test(boardSrc()));
+          ok('★ a live session stays on the board past the time window, and an open card (Your Turn, Waiting) until it moves to Completed',
+            /now - c\.lastT < hours \* 3600000 \|\| \(c\.column !== 'idle' && now - c\.lastT < lanes\.doneH \* 3600000\)\s*\|\| \(live && live\.has\(c\.id\)\)/.test(boardSrc())
+            && /sinceMs: now - Math\.max\(hours, lanes\.doneH\) \* 3600000/.test(boardSrc()));
           const D = require('../lib/dispatch.js');
           const f = D.buildCommand({ agent: 'claude', text: 'x', dir: '/tmp', session: '11111111-1111-4111-8111-111111111111', fork: true, worktree: true }).args;
           ok('★ fork: --resume <id> --fork-session (--worktree) -- text', f.join(' ') === '--bg --resume 11111111-1111-4111-8111-111111111111 --fork-session --worktree -- x');
