@@ -20,8 +20,8 @@ expect('v: still リスト',boardView==='list'&&document.body.classList.contains
 // 表示: a switch per field, ticked when on; a switch turned off takes that field off every card
 const cs0=JSON.stringify(cardShow);
 try{
-  const b=$('#cardshowbtn');expect('表示 is in the header and shown',!!b&&b.getBoundingClientRect().width>0);
-  b.click();await sleep(200);
+  const b=$('#cardshowbtn');expect('カード項目 is a row of ⚙',!!b&&!!b.closest('.setmenu'));
+  $('#setbtn').click();await sleep(150);b.click();await sleep(200);
   const pop=$('#cardshow'),sw=[...pop.querySelectorAll('button[data-k]')];
   out.fields=sw.map(x=>x.dataset.k+(x.classList.contains('on')?'+':'-'));
   expect('表示 opens its list of fields, one switch each',!pop.hidden&&sw.length===CARD_FIELDS.length);

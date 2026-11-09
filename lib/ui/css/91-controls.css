@@ -33,7 +33,7 @@ button.mini.compact:hover{background:color-mix(in srgb,var(--fg) 14%,transparent
 #mmeta .mx{font-size:17px}
 #detail:not(.sess) #mmeta .mx{display:none}
 
-/* the panel title keeps ≥ 16 characters; when too narrow, the controls wrap to a line under it */
+/* the panel title keeps ≥ 16 characters; when too narrow (under 620px), the controls wrap to a line under it */
 #mmeta{container:mmeta/inline-size}
 #mmeta .ttlrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 4px}
 #mmeta .ttlrow .ttl{flex:1 1 0;min-width:0;margin:0 4px;font-size:var(--fs-title);font-weight:600;color:var(--fg);line-height:var(--ctl-h);
@@ -43,7 +43,7 @@ button.mini.compact:hover{background:color-mix(in srgb,var(--fg) 14%,transparent
 #mmeta .ttlrow .tctl>.tlane,#mmeta .ttlrow .tctl>#dopark,#mmeta .ttlrow .tctl>#unpark{margin-left:auto}
 #mmeta .ttlrow .tlane{flex:none;font-size:var(--fs-meta);white-space:nowrap}
 #mmeta .ttlrow button.mini.tlb{flex:none}
-@container mmeta (min-width:800px){
+@container mmeta (min-width:620px){
   #mmeta .ttlrow{flex-wrap:nowrap}
   #mmeta .ttlrow .tctl{order:0;flex:none;flex-wrap:nowrap;padding-left:0;margin-right:4px}
 }

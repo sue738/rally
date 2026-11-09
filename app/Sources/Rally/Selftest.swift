@@ -217,14 +217,14 @@ extension AppDelegate {
             if case .success(let v) = cols, let d = v as? [String: Any] { for (k, val) in d { report[k] = val } }
 
             if scenario == "view" {
-                let r = await js("return {liveCardInputs:document.querySelectorAll('[data-col=\"working\"] .card input, [data-col=\"needs-you\"] .card input, [data-col=\"done\"] .card input').length, columns:[...document.querySelectorAll('section.col')].filter(x=>getComputedStyle(x).display!=='none').length, columnsInDom:document.querySelectorAll('section.col').length, doneHidden:getComputedStyle(document.querySelector('[data-col=\"done\"]')).display==='none', doneCount:document.querySelector('#donen').textContent.trim(), hasNewButton:!!document.querySelector('#new')}")
+                let r = await js("return {liveCardInputs:document.querySelectorAll('[data-col=\"working\"] .card input, [data-col=\"needs-you\"] .card input, [data-col=\"done\"] .card input').length, columns:[...document.querySelectorAll('section.col')].filter(x=>getComputedStyle(x).display!=='none'&&getComputedStyle(x.querySelector('.list')).display!=='none').length, columnsInDom:document.querySelectorAll('section.col').length, doneHidden:getComputedStyle(document.querySelector('[data-col=\"done\"] .list')).display==='none', doneCount:document.querySelector('[data-col=\"done\"] h2 .n').textContent.trim(), hasNewButton:!!document.querySelector('#new')}")
                 if case .success(let v) = r, let d = v as? [String: Any] { for (k, val) in d { report[k] = val } }
                 // live cards carry no input; a new session starts from the header button
                 let cardInputs = (report["liveCardInputs"] as? Int) ?? -1
                 let cols = (report["columns"] as? Int) ?? 0
                 report["ok"] = cardInputs == 0 && cols == 3 && (report["doneHidden"] as? Bool) == true
                     && !((report["doneCount"] as? String) ?? "").isEmpty && (report["hasNewButton"] as? Bool) == true
-                if report["ok"] as? Bool != true { report["error"] = "expected 3 visible lanes (got \(cols)), no input on live cards (got \(cardInputs)), 終わったもの hidden with a count, and a ＋新規セッション button" }
+                if report["ok"] as? Bool != true { report["error"] = "expected 3 open lanes (got \(cols)), no input on live cards (got \(cardInputs)), Completed folded to its header with a count, and a ＋新規セッション button" }
             }
             if scenario == "run" {
                 let cwd = Env.get("SELFTEST_CWD") ?? NSTemporaryDirectory()

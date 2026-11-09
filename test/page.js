@@ -971,6 +971,17 @@ console.log('== every button is also a command ==');
     const pg = require('../lib/page.js').build();
     ok('★ 設定: a ⚙ in the header opens キーバインドの設定 / カード項目 / ライト・ダーク / ショートカット一覧 (キーバインド sat only in the macOS menu bar, hidden in full screen)',
       /id="setbtn"/.test(pg) && /data-s="keys"/.test(pg) && /if\(s==='keys'\)togglePanel\('keys',openKeys\)/.test(uiScript()) && /\.modemenu\.setmenu\{position:fixed/.test(pg));
+
+    const hdr = pg.slice(pg.indexOf('<header>'), pg.indexOf('</header>'));
+    const m0 = hdr.indexOf('class="modemenu setmenu"'), m1 = hdr.indexOf('<div id="cardshow"');
+    const menu = hdr.slice(m0, m1), bare = hdr.slice(0, m0) + hdr.slice(m1);
+    ok('★ header: only the view switch, 残作業, 定期実行, ⚙ and ＋ 新規 are on it; Completed, 自動実行, カード項目, ライト / ダーク and ショートカット一覧 are rows of ⚙ (each was a second copy or a switch beside the buttons)',
+      ['showdone', 'subs', 'cardshowbtn', 'theme', 'helpbtn'].every((id) => menu.includes(`id="${id}"`) && !bare.includes(`id="${id}"`))
+      && ['pviewseg', 'pendall', 'jobsbtn', 'setbtn', 'new'].every((id) => bare.includes(`id="${id}"`))
+      && /class="smh">表示<\/div>/.test(menu) && /class="smh">設定<\/div>/.test(menu) && /class="smh">ヘルプ<\/div>/.test(menu));
+    ok('★ header: a switch row of ⚙ keeps the menu open; Completed hidden keeps its lane header (pressing it shows the lane)',
+      /querySelectorAll\('\.smsw'\)\)x\.addEventListener\('click',e=>\{e\.stopPropagation\(\)/.test(uiScript())
+      && /body\.vlist\.hidedone \[data-col="done"\]\{display:flex\}/.test(pg) && /const flip=\(\)=>done\?\$\('#showdone'\)\.click\(\)/.test(uiScript()));
   } catch (e) { ok(`settings — ${e.message}`, false); }
   try {
     let top = '';

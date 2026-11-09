@@ -19,7 +19,7 @@ try{
   for(const v of ['list'])for(const panel of [false,true])for(const term of [false,true]){
     setView(v);termOpen(term);if(panel&&c)openDetail(c,false,{focus:false});else closeDetail('x');await sleep(500);
     const key=v+(panel?'+panel':'')+(term?'+term':'');
-    const targets={'the notification bar':$('#notifybar .nb-t'),'its button':$('#notifygo'),'表示':$('#cardshowbtn'),'＋ 新規':$('#new'),
+    const targets={'the notification bar':$('#notifybar .nb-t'),'its button':$('#notifygo'),'⚙':$('#setbtn'),'＋ 新規':$('#new'),
       'the first lane title':$('main section.col h2'),'the first card':[...document.querySelectorAll('main section.col .card:not(.skel)')].find(e=>e.getBoundingClientRect().height>0)};
     // リスト's panel is docked beside the list: no × there on purpose (Esc gives the keys back to the list)
     if(panel)Object.assign(targets,{'the panel title':$('#clabel')},v==='board'?{'the panel ×':$('#mclose2')}:{});

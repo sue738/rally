@@ -1,5 +1,5 @@
 /* ---- widths: every window width gets a layout of its own ---- */
-/* one header row on a desktop: the limits give way first, then controls that have a key and a palette entry */
+/* one header row on a desktop: the limits give way (the rest of what the header held is in ⚙) */
 @media (min-width:1011px){
   header{flex-wrap:nowrap}
   header>*{flex-shrink:0;white-space:nowrap}
@@ -7,14 +7,14 @@
   #limits{flex:0 1 auto;min-width:0;overflow:hidden}
 }
 @media (max-width:1320px){#hours{display:none}}
-@media (max-width:1220px){#subs,#theme{display:none}#q{min-width:100px}}
-@media (max-width:1120px){#jobsbtn,#limits .limg+.limg{display:none}}
+@media (max-width:1220px){#q{min-width:100px}}
+@media (max-width:1120px){#limits .limg+.limg{display:none}}
 /* a long unbroken path must not widen the lane past the window */
 main{grid-template-columns:minmax(240px,var(--youw)) repeat(3,minmax(150px,var(--smallw)))}
 .col{min-width:0}
 @media (max-width:1010px){
   main,body.hidedone main{grid-template-columns:minmax(0,1fr)}
-  #hours,#subs,#jobsbtn{display:none}
+  #hours,#jobsbtn{display:none}
 }
 /* between phone and desktop: the panel takes the right side, lanes stack on the left */
 @media (min-width:761px) and (max-width:1010px){

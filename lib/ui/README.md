@@ -64,7 +64,7 @@ The files are split by feature, but they are not modules:
 | `84-diff.js` | markdown rendering, diffs and review notes |
 | `87-viewer.js` | the file / changes viewer |
 | `90-help.js` | the shortcut sheet and ⌘ shortcuts |
-| `92-keyset.js` | 設定: キーバインド — the panel where a key is chosen (click, press the new key), presets, reset |
+| `92-keyset.js` | 設定: キーバインド — the panel where a key is chosen (click, press the new key), presets, reset; ⚙ (表示 / 設定 / ヘルプ) and its rows |
 
 ## css/
 
@@ -90,3 +90,4 @@ The files are split by feature, but they are not modules:
 | `85-opened.css` | the card whose panel is open |
 | `88-keyset.css` | the key settings panel |
 | `90-late.css` | later overrides: ↓ 最新へ, list + terminal, notifications bar, button sizes, attachments, IME |
+| `93-header.css` | the header (allowance left; view switch, 残作業, 定期実行, ⚙, ＋ 新規 right), ⚙'s sections and switch rows, Completed hidden as its lane header alone |

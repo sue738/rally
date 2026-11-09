@@ -1,0 +1,37 @@
+/* The header (2026-11): the allowance on the left; on the right only what is pressed often — the view switch, 残作業,
+   定期実行, ⚙ and ＋ 新規. What the board shows (Completed, 自動実行, カード項目, ライト / ダーク) and the settings are in ⚙.
+   Words in the UI font, numbers in mono; one height, one kind of quiet button, one filled one (新規). */
+header{font-family:inherit;gap:6px}
+header button,header button.mini{font-family:inherit;font-size:var(--fs-small);font-weight:500;color:var(--dim);padding:0 10px}
+header button:hover,header button.mini:hover{color:var(--fg)}
+header #pendn,header .kk{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header #pendall #pendn{color:var(--fg);margin-left:2px}
+header .hsep{flex:none;width:1px;height:16px;background:var(--line);margin:0 6px}
+header .pviewseg{margin-right:2px}
+header .pviewseg button{font-weight:500}
+header #setbtn{width:var(--ctl-h);padding:0;justify-content:center;font-size:15px;line-height:1}
+header #setbtn[aria-expanded="true"],header #setbtn.on{background:var(--hover);color:var(--fg)}
+header #new{margin-left:6px;padding:0 12px;color:var(--info);font-weight:600;background:color-mix(in srgb,var(--info) 14%,transparent)}
+header #new:hover{color:var(--info);background:color-mix(in srgb,var(--info) 22%,transparent)}
+header #new .kk{margin-left:2px}
+
+/* ⚙: sections (表示 / 設定 / ヘルプ); a switch row says on / off at its right edge */
+.modemenu.setmenu{min-width:290px;max-width:340px;padding:6px;max-height:calc(100vh - 60px);overflow-y:auto}
+.setmenu .smh{font-size:var(--fs-micro);font-weight:600;color:var(--dim);letter-spacing:.06em;padding:8px 10px 3px}
+.setmenu .smh:first-child{padding-top:3px}
+.setmenu .smh:not(:first-child){margin-top:4px;border-top:1px solid var(--line);padding-top:9px}
+.setmenu button .dim{white-space:normal}
+.setmenu .smsw{position:relative;padding-right:50px}
+.setmenu .smsw::after{content:'';position:absolute;right:10px;top:50%;margin-top:-8px;width:28px;height:16px;border-radius:8px;
+  background:radial-gradient(circle 6px at 8px 50%,#fff 96%,transparent 100%),color-mix(in srgb,var(--dim) 45%,transparent);transition:background .12s ease}
+.setmenu .smsw.on::after{background:radial-gradient(circle 6px at 20px 50%,#fff 96%,transparent 100%),var(--info)}
+.setmenu .smsw.on b{color:inherit}
+.setmenu #donen{font-weight:400;margin-left:6px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.setmenu .smcur{color:var(--dim)}
+
+/* Completed while hidden: its header alone at the foot of the list, with the count — pressing it shows the lane */
+body.vlist.hidedone [data-col="done"]{display:flex}
+body.vlist.hidedone:not(.searching) [data-col="done"] .list{display:none}
+body.vlist.hidedone:not(.searching) [data-col="done"] h2::before{content:'▸'}
+body.vlist.hidedone:not(.searching) [data-col="done"] h2{opacity:.8}
+body.vlist.hidedone:not(.searching) [data-col="done"] h2:hover{opacity:1}

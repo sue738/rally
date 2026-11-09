@@ -1,7 +1,7 @@
 // selftest.sh controls: a view switch (ターミナル | 会話, the header's #pviewseg: one setting for every card) is a segmented control — joined, the chosen one filled — and the
 // panel's actions (待ちにする, 完了にする) are squarer buttons with a mark; one height per row, one centre line, segment
-// insets even on all sides, a long title keeps 16 characters and nothing on its row is cut off; the header's switches
-// look like switches and its actions do not. The screenshot of this run is the thing to look at.
+// insets even on all sides, a long title keeps 16 characters and nothing on its row is cut off; the header carries no
+// switches (they are in ⚙) and Completed hidden keeps its lane header. The screenshot of this run is the thing to look at.
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));const bad=[];const out={};
 const expect=(what,cond)=>{if(!cond)bad.push(what)};
 await wait(()=>document.querySelectorAll('section.col .card:not(.skel)').length>0,15000);termOpen(false);
@@ -47,12 +47,25 @@ await wait(()=>$('#mmeta .ttlrow .mviews'),8000);await sleep(400);
  for(const e of [...$('#mmeta .ttlrow').querySelectorAll('button, .mviews, .kbdhint, .tlane')].filter(vis)){const b=R(e);
    if(b.right>Math.min(rr.right,pr.right)+.5||b.left<rr.left-.5)bad.push('cut off in the title row: '+(e.id||e.className)+' '+Math.round(b.left)+'–'+Math.round(b.right)+' in '+Math.round(rr.left)+'–'+Math.round(rr.right));
    if(e.scrollWidth>e.clientWidth+1)bad.push('its words do not fit: '+(e.id||e.className))}}
-// the header: all one height; a switch (Completed, 自動実行) shows a switch, an action does not
-{const hb=[...document.querySelectorAll('header > button, #pviewseg')].filter(vis),hh=hb.map(e=>Math.round(R(e).height));out.headerHeights=hh;
+// the header: all one height on one centre line, no switches in it — Completed and 自動実行 are switch rows of ⚙, which
+// stays open while one flips; Completed hidden is its lane header alone at the foot of the list, with the count
+{const hb=[...document.querySelectorAll('header > button, header #setbtn, #pviewseg')].filter(vis),hh=hb.map(e=>Math.round(R(e).height));out.headerHeights=hh;
  expect('the header\'s buttons are one height ('+hh.join(',')+')',hh.length>=4&&hh.every(h=>h===28));
  const cy=hb.map(e=>R(e).top+R(e).height/2);expect('… on one centre line',Math.max(...cy)-Math.min(...cy)<=1);
- const sw=e=>parseFloat(getComputedStyle(e,'::before').width)||0;
- const tg=[...document.querySelectorAll('header button.toggle')].filter(vis),ac=['#jobsbtn','#pendall','#new'].map(s=>$(s)).filter(e=>e&&vis(e));
- out.switchW=tg.map(sw);expect('a header toggle carries a switch',tg.length>0&&tg.every(e=>sw(e)>=18));
- expect('… and a header action none',ac.every(e=>getComputedStyle(e,'::before').content==='none'||sw(e)===0))}
+ expect('… and no switch among them',![...document.querySelectorAll('header button.toggle, header .smsw')].some(vis));
+ const m=$('.setmenu'),sd=$('#showdone'),sb=$('#subs');
+ expect('⚙ holds Completed, 自動実行, カード項目, ライト / ダーク and ショートカット一覧',!!m&&['#showdone','#subs','#cardshowbtn','#theme','#helpbtn'].every(s=>{const e=$(s);return e&&m.contains(e)}));
+ const was=sd.classList.contains('on');
+ $('#setbtn').click();await sleep(200);
+ out.switchW=[sd,sb].map(e=>parseFloat(getComputedStyle(e,'::after').width)||0);
+ expect('… each of the two a switch at its right',!m.hidden&&out.switchW.every(w=>w>=24));
+ if(was){sd.click();await sleep(300)}
+ const dl=document.querySelector('section.col[data-col="done"]'),dh=dl&&dl.querySelector('h2');
+ expect('Completed hidden: its header stays in the list with the count',document.body.classList.contains('hidedone')&&vis(dh)&&/\d/.test(dh.querySelector('.n').textContent)&&!vis(dl.querySelector('.list')));
+ expect('… its cards are not walked by the keys',!cardEls().some(e=>dl.contains(e)));
+ expect('… and ⚙ stayed open while it flipped',!m.hidden);
+ dh.click();await sleep(300);
+ expect('pressing the header shows Completed (the ⚙ switch on)',!document.body.classList.contains('hidedone')&&sd.classList.contains('on')&&vis(dl.querySelector('.list')));
+ if(!was){sd.click();await sleep(300)}
+ document.body.click();await sleep(100);expect('a click elsewhere closes ⚙',m.hidden)}
 return {ok:bad.length===0,bad,out};
