@@ -78,6 +78,11 @@
 .hist .turn.user[data-st="queued"] .who::before{content:'⏳'}
 .hist .turn.user[data-st="error"] .who{color:var(--bad)}
 .hist .turn.user[data-st="error"] .who::before{content:'!'}
+/* stopped by a hook before the session took it: the words, then the hook's reason, and a way back to the box */
+.hist .turn.user.blocked{background:color-mix(in srgb,var(--bad) 9%,transparent)}
+.hist .turn.blocked .bkwhy{margin-top:6px;padding-top:6px;border-top:1px dashed color-mix(in srgb,var(--bad) 35%,var(--line));color:var(--dim);font-size:var(--fs-small)}
+.hist .turn.blocked .bkagain{background:none;border:1px solid color-mix(in srgb,var(--bad) 40%,var(--line));color:inherit;cursor:pointer;font:inherit;font-size:var(--fs-small);padding:0 6px;margin-left:6px;border-radius:4px}
+.hist .turn.blocked .bkagain:hover{background:color-mix(in srgb,var(--bad) 14%,transparent)}
 .hist .turn.pending[data-st="sending"]{opacity:.8}
 @keyframes echospin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.hist .turn.user[data-st="sending"] .who::before{animation:none}}

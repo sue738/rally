@@ -2100,6 +2100,31 @@ console.log('== search: words in the conversations ==');
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 }
 
+console.log('== history: a message a hook stopped ==');
+{
+  // seen 2026-11-09: a message sent from the board woke the session, its UserPromptSubmit hook stopped it, and the
+  // board still showed 送信済み (the record has no turn of yours, only this system line)
+  const LM = require('../lib/lastMessage.js');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-hookblk-'));
+  const f = path.join(d, 's.jsonl');
+  const ts = (n) => new Date(Date.UTC(2026, 10, 9, 8, 50, n)).toISOString();
+  const why = '文脈 17万トークン・最後の応答から 1 時間。続けるなら同じ文をもう一度送ってください。';
+  fs.writeFileSync(f, [
+    { type: 'assistant', timestamp: ts(1), message: { role: 'assistant', content: [{ type: 'text', text: 'PR を出してよいですか？' }] } },
+    { type: 'system', subtype: 'informational', timestamp: ts(52), level: 'warning', preventContinuation: true, content: 'UserPromptSubmit operation blocked by hook:\n' + why + '\n\nOriginal prompt: AIXのリポにPRを送ろうか', promptSubmitEnding: { ending: { kind: 'blocked_by_hook', reason: why }, promptKept: false } },
+    { type: 'system', subtype: 'informational', timestamp: ts(53), level: 'warning', content: 'Remote Control disconnected' },
+    // an older Claude Code: the content line only
+    { type: 'system', subtype: 'informational', timestamp: ts(58), content: 'UserPromptSubmit operation blocked by hook:\nだめ\n\nOriginal prompt: 1行目\n2行目' },
+  ].map((x) => JSON.stringify(x)).join('\n') + '\n');
+  try {
+    const tu = LM.history({ agent: 'claude', id: 'b', file: f }).turns;
+    const b = tu.filter((x) => x.kind === 'blocked');
+    ok('★ history: a message a hook stopped is in the thread as stopped, with the words and the hook\'s reason (it was left out, so the board read 送信済み)',
+      b.length === 2 && b[0].text === 'AIXのリポにPRを送ろうか' && b[0].reason === why && b[1].text === '1行目\n2行目' && b[1].reason === 'だめ');
+    ok('history: a stopped message is not a turn of yours (nothing says it was taken), and other notices stay out', !tu.some((x) => x.kind === 'user') && tu.length === 3);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+}
+
 console.log('== history: a message delivered from another session ==');
 {
   // a held message the session has since taken is not 届け待ち (the empty dequeue took the wrong one: seen on a real session)
