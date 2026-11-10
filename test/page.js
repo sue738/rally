@@ -490,6 +490,18 @@ if (api) {
     api.applyState({ cards: [] });
   } catch (e) { ok(`famVersions — ${e.message}`, false); }
   try {
+    // measured on the CLI (2.1.322): modelSettings is looked up by the exact id, then the family key ("fable"), then effortLevel
+    api.applyState({ cards: [{ agent: 'claude', id: 'al1', column: 'idle', modelId: 'claude-fable-5-1', lastT: 1000 }], aliases: { fable: 'claude-fable-5-2' }, efforts: { claude: 'high', claudeModels: { 'claude-fable-5-1': 'xhigh' } } });
+    const a = api.famVersions().fable, e1 = api.effortDefault('claude', 'fable'), e0 = api.effortDefault('claude', 'claude-fable-5-1');
+    api.applyState({ cards: [], aliases: { fable: 'claude-fable-5-2' }, efforts: { claude: 'high', claudeModels: { fable: 'xhigh', 'claude-fable-5-2': 'low' } } });
+    const e2 = api.effortDefault('claude', 'fable');
+    api.applyState({ cards: [], aliases: { fable: 'claude-fable-5-2' }, efforts: { claude: 'high', claudeModels: { fable: 'xhigh' } } });
+    const e3 = api.effortDefault('claude', 'fable'), e4 = api.effortDefault('claude', 'claude-fable-5-2[1m]');
+    ok('★ model aliases: an alias reads as the version the CLI names today (fable 5.2 before any 5.2 session); its depth is that model\'s — 5.1\'s setting is not 5.2\'s, a family key covers every version, an exact id wins',
+      a === '5.2' && e1 === 'high' && e0 === 'xhigh' && e2 === 'low' && e3 === 'xhigh' && e4 === 'xhigh');
+    api.applyState({ cards: [] });
+  } catch (e) { ok(`model aliases — ${e.message}`, false); }
+  try {
     api.applyState({ home: '/Users/me', cards: [] });
     const h = (c, above) => api.autoHue({ agent: 'claude', ...c }, above);
     ok('★ colours: each session its own — two in one folder are not one colour by rule', new Set([...Array(12)].map((_, i) => h({ id: 'same-folder-' + i, project: '/Users/me/work' }))).size > 3);

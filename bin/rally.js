@@ -53,7 +53,7 @@ Options:
   --no-open            do not open the browser
   --json               (now) machine-readable
   --all                (now) include finished sessions, subagents and machine-started runs
-  --enrich             (state) start background title generation for a few cards missing one
+  --enrich             (state) start background title generation for a few cards missing one, and ask claude which model each alias names
                         (claude -p --model haiku; needs claude installed; RALLY_NO_ENRICH=1 disables it)
 
 Columns are read from each session's last transcript entries and its
@@ -559,6 +559,11 @@ async function main() {
     const r = Enrich.runOne({ agent: o.agentName, id: o.session, file: o.file, lastTool: o.lastTool,
       recentTools: o.tools, targets: o.targets, project: o.project });
     return process.stdout.write(Text.json(r || { ok: false }));
+  }
+  if (o.command === 'model-aliases') {
+    // one shot for the detached child lib/aliases.js spawns: which model each claude alias names today
+    const r = await require('../lib/aliases.js').run();
+    return process.stdout.write(Text.json(r));
   }
   if (o.command === 'gitinfo') {
     // what the terminal strip's prompt shows

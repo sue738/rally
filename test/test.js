@@ -29,7 +29,7 @@ process.env.RALLY_SCAN_CACHE = path.join(tmp, 'scan-cache.json');
 const STORES = {};
 for (const [k, f] of [['QUEUE', 'queue.json'], ['DONE', 'done.json'], ['WIP', 'wip.json'], ['LABELS', 'labels.json'],
   ['TITLES', 'titles.json'], ['INDEX', 'index.json'], ['LAST_CACHE', 'last-cache.json'], ['ATTACHMENTS', 'attachments'],
-  ['RUNS', 'runs'], ['WIP_OUT', 'wip-out'], ['IMG', 'img']]) process.env[`RALLY_${k}`] = STORES[k] = path.join(tmp, f);
+  ['RUNS', 'runs'], ['WIP_OUT', 'wip-out'], ['IMG', 'img'], ['MODEL_ALIASES', 'model-aliases.json']]) process.env[`RALLY_${k}`] = STORES[k] = path.join(tmp, f);
 // A test that points a store somewhere else puts it back here, never
 // `delete`s it: deleting fell through to ~/.rally, and the drains the
 // later server tests trigger rewrote the real queue.json.
@@ -4782,6 +4782,50 @@ process.stdout.write(String(bad));\n`);
       ok('★ page: model names are escaped in the menu; the dialog\'s Enter / Esc send CR / ESC; 新規 remembers 考える深さ',
         /data-m="'\+esc\(v\)\+'"/.test(PG) && /DLG_KEYS=\{enter:'\\r',esc:'\\x1b'\}/.test(PG) && /const agent=\(abox\|\|\{dataset:\{\}\}\)\.dataset\.v\|\|'claude';\s*const effort=/.test(PG));
       ok('★ page: a relay on its way reads 渡しています, not 送信済み', /r\.relayed&&r\.pending\)\{e\.st='sending';e\.who=t\('渡しています…'\)/.test(PG));
+    }
+    {
+      // which model each claude alias names today (lib/aliases.js): read off the CLI's init line, no API call
+      const A = require('../lib/aliases.js');
+      const d = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-al-'));
+      const fake = path.join(d, 'claude'), argl = path.join(d, 'args.log');
+      // a hook line, then init; then it waits, as the CLI does on an API it cannot reach
+      fs.writeFileSync(fake, `#!/bin/sh
+echo "$* | $ANTHROPIC_BASE_URL" >> '${argl}'
+m=$(printf '%s' "$*" | grep -o -- '--model [a-z]*' | cut -d' ' -f2)
+echo '{"type":"system","subtype":"hook_started"}'
+case "$m" in
+  fable) echo '{"type":"system","subtype":"init","model":"claude-fable-9-9"}';;
+  opus) echo '{"type":"system","subtype":"init","model":"claude-opus-9-1[1m]"}';;
+  sonnet) echo '{"type":"system","subtype":"init","model":"gpt-x"}';;
+  *) exit 0;;
+esac
+exec sleep 30
+`, { mode: 0o755 });
+      const pb = process.env.RALLY_BIN_CLAUDE;
+      process.env.RALLY_BIN_CLAUDE = fake;
+      try {
+        const t0 = Date.now(), f = await A.probe(fake, 'fable'), took = Date.now() - t0;
+        ok('★ model aliases: an alias is read off the CLI\'s init line (past a hook line) at once, not when the CLI gives up on the API', f === 'claude-fable-9-9' && took < 5000);
+        const log = fs.readFileSync(argl, 'utf8');
+        ok('★ model aliases: the probe sends nothing anywhere — the API base URL is a closed local port; no tools, no saved session, none of your hooks',
+          /\| http:\/\/127\.0\.0\.1:9$/m.test(log) && /--no-session-persistence/.test(log) && /--setting-sources project/.test(log) && /--tools  -- x/.test(log));
+        const c = await A.run(T(0));
+        ok('★ model aliases: every alias is asked and kept as a model id — [1m] dropped; a non-claude answer and a CLI that printed no init left out',
+          JSON.stringify(A.current()) === JSON.stringify({ opus: 'claude-opus-9-1', fable: 'claude-fable-9-9' }) && c.at === T(0) && !c.fail);
+        const key = A.binKey(fake);
+        ok('★ model aliases: asked again when the CLI binary changes (an update) or after 6 hours, not on every refresh; not while one runs or soon after a failed try',
+          A.due({}, key, 0) && !A.due({ bin: key, at: 1000 }, key, 2000) && A.due({ bin: 'old@1', at: 1000 }, key, 2000) && A.due({ bin: key, at: 0 }, key, A.STALE_MS + 1)
+          && !A.due({ bin: key, at: 0, pending: 100 }, key, 200) && !A.due({ bin: key, at: 0, fail: 100 }, key, 200) && !A.due({}, '', 0));
+        let spawned = 0; const sp = () => { spawned++; };
+        fs.writeFileSync(A.cachePath(), JSON.stringify({ at: Date.now(), bin: key, aliases: { fable: 'claude-fable-9-9' } }));
+        const r1 = A.maybeRefresh(Date.now(), sp);
+        fs.writeFileSync(A.cachePath(), JSON.stringify({ at: Date.now(), bin: 'old@1', aliases: {} }));
+        const r2 = A.maybeRefresh(Date.now(), sp), r3 = A.maybeRefresh(Date.now(), sp);
+        const st = fs.readFileSync(path.join(__dirname, '..', 'lib', 'board', 'state.js'), 'utf8');
+        ok('★ model aliases: a stale cache starts one background ask, not another while it runs; the state carries them, and only a refresh that may start claude (enrich, off in tests) asks',
+          !r1 && r2 && !r3 && spawned === 1 && /aliases: Aliases\.current\(\)/.test(st) && /if \(opts\.enrich\) \{[\s\S]*?Aliases\.maybeRefresh\(\)[\s\S]*?\n  \}/.test(st));
+      } catch (e) { ok('model aliases — ' + e.message, false); }
+      finally { process.env.RALLY_BIN_CLAUDE = pb; scratchStore('MODEL_ALIASES'); fs.rmSync(d, { recursive: true, force: true }); }
     }
     // the page's own script, executed rather than parsed (test/page.js)
 {
