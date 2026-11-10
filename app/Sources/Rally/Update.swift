@@ -2,10 +2,17 @@
 // sue738/rally's latest release; when it is newer than this build, the Rally menu gets
 // "Update Available: vX…" (opens the release page) and one notification is posted per version.
 // Nothing is downloaded or installed. RALLY_NO_UPDATE_CHECK=1 turns the check off.
+//
+// The same daily check also fetches the price list (lib/rates.json on main): model prices change more often
+// than the app is released. It is left at ~/.rally/rates.json for lib/price.js, which uses it only when it is
+// well-formed and dated later than this build's own. Numbers under model names: nothing in it is run.
 import AppKit
 
 enum Update {
     static let api = URL(string: "https://api.github.com/repos/sue738/rally/releases/latest")!
+    static let rates = URL(string: "https://raw.githubusercontent.com/sue738/rally/main/lib/rates.json")!
+    /// lib/price.js reads no more than this
+    static let ratesMax = 65536
     static let day: TimeInterval = 24 * 60 * 60
     static var off: Bool { Env.get("NO_UPDATE_CHECK") != nil }
     static var current: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0" }
@@ -51,6 +58,7 @@ extension AppDelegate {
         let d = UserDefaults.standard, now = Date().timeIntervalSince1970
         if now - d.double(forKey: "update.checkedAt") < Update.day { return }
         d.set(now, forKey: "update.checkedAt")
+        fetchRates()
         var req = URLRequest(url: Update.api, timeoutInterval: 15)
         req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         req.setValue("Rally/" + Update.current, forHTTPHeaderField: "User-Agent")
@@ -67,6 +75,24 @@ extension AppDelegate {
                 self.logLine(["ev": "update-check", "latest": tag, "current": Update.current])
                 self.showUpdate()
             }
+        }.resume()
+    }
+
+    /// The repository's price list, saved as it came when it looks like one (lib/price.js checks every row).
+    func fetchRates() {
+        var req = URLRequest(url: Update.rates, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+        req.setValue("Rally/" + Update.current, forHTTPHeaderField: "User-Agent")
+        URLSession.shared.dataTask(with: req) { data, resp, _ in
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+            guard code == 200, let data, data.count <= Update.ratesMax,
+                  let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let asof = j["asof"] as? String, j["claude"] is [String: Any] else {
+                DispatchQueue.main.async { self.logLine(["ev": "rates-failed", "status": code]) }
+                return
+            }
+            let dir = Env.get("HOME") ?? (FileManager.default.homeDirectoryForCurrentUser.path + "/.rally")
+            let saved = (try? data.write(to: URL(fileURLWithPath: dir + "/rates.json"), options: .atomic)) != nil
+            DispatchQueue.main.async { self.logLine(["ev": "rates", "asof": asof, "saved": saved]) }
         }.resume()
     }
 

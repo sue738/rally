@@ -1004,14 +1004,25 @@ console.log('== every button is also a command ==');
   try {
     let top = '';
     try { api.openDetail({ ...card, agent: 'claude', id: 'rec-2' }); top = api.body().innerHTML; } catch (e) { ok(`recipe marks — ${e.message}`, false); }
-    ok('★ おすすめ: 精度 and 費用 as bars — 費用 to scale with the API price (fable full, opus 40%, haiku 1%→2% floor), the unit price beside it',
-      /rfc" style="width:100%"/.test(top) && /rfc" style="width:40%"/.test(top) && /rfc" style="width:2%"/.test(top) && /\$4 \/ \$20/.test(top));
+    ok('★ おすすめ: 精度 and 費用 as bars — 費用 to scale with the API price against the dearest listed model\'s $50 (fable $40 → 80%, opus 40%, haiku 1%→2% floor), the unit price beside it',
+      /rfc" style="width:80%"/.test(top) && /rfc" style="width:40%"/.test(top) && /rfc" style="width:2%"/.test(top) && /\$4 \/ \$20/.test(top) && /\$8 \/ \$40/.test(top) && !/\$10 \/ \$50/.test(top));
   } catch (e) { ok(`recipe marks — ${e.message}`, false); }
   try {
     let top = '';
     try { api.openDetail({ ...card, agent: 'claude', id: 'cost-1' }); top = api.body().innerHTML; } catch (e) { ok(`unit price — ${e.message}`, false); }
     ok('★ おすすめ: 費用 also as the API unit price per million tokens (opus $4 / $20, haiku $0.1 / $0.5)', /\$4 \/ \$20/.test(top) && /\$0\.1 \/ \$0\.5/.test(top));
   } catch (e) { ok(`unit price — ${e.message}`, false); }
+  try {
+    // the state carries the price list in use (lib/price.js: the build's, or a later one the app fetched)
+    api.applyState({ cards: [{ ...card, agent: 'claude', id: 'rate-live' }], agents: [], hours: 24, collisions: [],
+      rates: { asof: '2099-01-01', claude: { opus: [3, 15], sonnet: [1, 5], haiku: [0.1, 0.5] }, codex: { 'gpt-6-astra': [10, 30] } } });
+    let top = '';
+    try { api.openDetail({ ...card, agent: 'claude', id: 'rate-live' }); top = api.body().innerHTML; } catch (e) { ok(`live rates — ${e.message}`, false); }
+    const mm = (top.match(/class="modemenu modelmenu"[^]*?<\/div><\/span>/) || [top])[0];
+    ok('★ prices come from the state\'s list: a changed price shows (opus $3 / $15, bar 15/30 → 50%), the model menu\'s guide says it too, and a model the list has no price for shows none',
+      /\$3 \/ \$15/.test(top) && !/\$4 \/ \$20/.test(top) && /rfc" style="width:50%"/.test(top) && /\(\$3\/\$15\)/.test(mm) && !/\$8/.test(top) && !/\(\s*\)|最も高い \)/.test(top));
+    api.applyState({ cards: [{ ...card, agent: 'claude', id: 'rate-live' }], agents: [], hours: 24, collisions: [] });
+  } catch (e) { ok(`live rates — ${e.message}`, false); }
   try {
     ok('★ ⌘K: what was said in the sessions is searched too once typing pauses (runawake was only in the conversation, not a title), shown as 会話の中 with the snippet, after exact title matches',
       /pal\.ct=setTimeout\(\(\)=>palConvo\(cq\),350\)/.test(uiScript()) && /tag:(?:t\(')?会話の中'\)?,sub:sn/.test(uiScript()) && /if\(typeof pal!=='undefined'&&pal&&j&&pal\.cq===j\.q\)/.test(uiScript()));

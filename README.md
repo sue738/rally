@@ -163,7 +163,10 @@ on disk.
   photo you take is saved under `~/.rally/attachments/`; nothing else is recorded.
 - **Update check:** once a day the app asks GitHub for this repository's latest release
   (`api.github.com/repos/sue738/rally/releases/latest`, with the app's version as its User-Agent). A newer one shows
-  in the Rally menu and as one notification; nothing is downloaded. `RALLY_NO_UPDATE_CHECK=1` turns it off.
+  in the Rally menu and as one notification; no update is downloaded or installed. The same check fetches the model price list
+  (`raw.githubusercontent.com/sue738/rally/main/lib/rates.json`), since prices change more often than the app is
+  released: numbers only, kept at `~/.rally/rates.json` and used when dated later than the build's own.
+  `RALLY_NO_UPDATE_CHECK=1` turns both off.
 - Card titles and Leftovers are generated with your own `claude` CLI and count toward your
   usage (`RALLY_NO_ENRICH=1` turns titles off).
 

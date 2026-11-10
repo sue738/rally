@@ -2919,7 +2919,51 @@ console.log('== board server ==');
         // Opus 5.5: $20 out + $0.2 cache read + $8 an hour's cache write + $5 five minutes' (no split recorded)
         ok('★ the API price per model: out, cache read, cache write by its kind', Math.abs(d.usd - (20 + 0.2 + 8 + 5 + 10 * 4 / 1e6)) < 1e-3 && !d.unpriced);
         const P = require('../lib/price.js');
-        ok('a model without a checked rate has no price, and says which', P.cost({ 'claude-fable-5-1': { i: 5, o: 5 } }).unpriced[0] === 'claude-fable-5-1' && P.cost({ 'claude-fable-5-1': { i: 5 } }).usd === 0);
+        ok('a model without a checked rate has no price, and says which', P.cost({ 'claude-nova-9': { i: 5, o: 5 } }).unpriced[0] === 'claude-nova-9' && P.cost({ 'claude-nova-9': { i: 5 } }).usd === 0);
+        {
+          // the price list is one file (lib/rates.json); a later one the app fetched (~/.rally/rates.json) takes its place
+          const fsr = require('fs'), osr = require('os'), pathr = require('path');
+          const built = JSON.parse(fsr.readFileSync(pathr.join(__dirname, '..', 'lib', 'rates.json'), 'utf8'));
+          const prevHome = process.env.RALLY_HOME, dir = () => fsr.mkdtempSync(pathr.join(osr.tmpdir(), 'rates-'));
+          const withFile = (text, fn) => { const h = dir(); if (text !== null) fsr.writeFileSync(pathr.join(h, 'rates.json'), text); process.env.RALLY_HOME = h; try { return fn(h); } finally { fsr.rmSync(h, { recursive: true, force: true }); } };
+          try {
+            // what Claude Code itself recorded for a Fable 5.2 session (cost-state, CLI 2.1.322): $8.290859
+            const fable = { 'claude-fable-5-2': { i: 1127, o: 70582, cr: 10754415, cw5: 0, cw1: 206730 } };
+            ok('★ Fable 5.2 and Haiku 5.5 are priced, to the cent of what the CLI recorded', withFile(null, () => Math.abs(P.cost(fable).usd - 8.290859) < 1e-6 && !P.cost(fable).unpriced.length
+              && Math.abs(P.cost({ 'claude-haiku-5-5': { i: 1575300, o: 192232 } }).usd - 0.253646) < 1e-6));
+            const later = { ...built, asof: '2099-01-01', claude: { ...built.claude, 'claude-fable-5-2': [6, 30, 0.2, 7.5, 12], 'claude-nova-9': [1, 2, 3, 4, 5] } };
+            ok('★ a later price list the app fetched takes the place of the build\'s: a changed price and a new model, with no release',
+              withFile(JSON.stringify(later), () => P.rateOf('claude-fable-5-2')[1] === 30 && P.cost({ 'claude-nova-9': { o: 1e6 } }).usd === 2 && P.shown().claude.fable.join('/') === '6/30' && P.shown().asof === '2099-01-01'));
+            ok('an older or same-day fetched list is left alone: a new build is not held back by an old file',
+              withFile(JSON.stringify({ ...later, asof: built.asof }), () => P.rateOf('claude-fable-5-2')[1] === built.claude['claude-fable-5-2'][1] && !P.rateOf('claude-nova-9'))
+              && withFile(JSON.stringify({ ...later, asof: '2020-01-01' }), () => !P.rateOf('claude-nova-9')));
+            const bad = [
+              'not json', '[]', JSON.stringify({ ...later, asof: 'tomorrow' }), JSON.stringify({ ...later, claude: {} }),
+              JSON.stringify({ ...later, claude: { 'claude-nova-9': [1, 2, 3, 4] } }), JSON.stringify({ ...later, claude: { 'claude-nova-9': [1, 2, 3, 4, '5'] } }),
+              JSON.stringify({ ...later, claude: { 'claude-nova-9': [1, 2, 3, 4, -5] } }), JSON.stringify({ ...later, claude: { '<img src=x>': [1, 2, 3, 4, 5] } }),
+              JSON.stringify({ ...later, menu: { fable: 'claude-not-listed' } }), JSON.stringify({ ...later, codex: { 'gpt-9': ['$1', 2] } }),
+              JSON.stringify({ ...later, pad: 'x'.repeat(70000) }),
+            ];
+            ok('★ a fetched file that is not a price list in every part (bad JSON, a string for a price, a name that is markup, too large) is not used at all',
+              bad.every((b) => withFile(b, () => P.rateOf('claude-fable-5-2')[1] === built.claude['claude-fable-5-2'][1] && !P.rateOf('claude-nova-9') && P.shown().asof === built.asof)));
+            ok('the file changing is seen without a restart', withFile(JSON.stringify(later), (h) => {
+              const a = P.rateOf('claude-fable-5-2')[1];
+              fsr.writeFileSync(pathr.join(h, 'rates.json'), JSON.stringify({ ...later, asof: '2099-02-02', claude: { ...later.claude, 'claude-fable-5-2': [5, 25, 0.2, 6.25, 10] } }));
+              return a === 30 && P.rateOf('claude-fable-5-2')[1] === 25;
+            }));
+            ok('a model named like an object\'s own parts finds no rate', withFile(null, () => P.rateOf('constructor') === null && P.rateOf('__proto__') === null && P.cost({ constructor: { o: 5 } }).unpriced[0] === 'constructor'));
+            // the menu's names: what the CLI says each stands for today wins over the list's own note of it
+            ok('★ a menu name is priced as the model it stands for today; one whose model is not listed has no price rather than its predecessor\'s',
+              withFile(null, () => P.shown({ fable: 'claude-fable-5-1' }).claude.fable.join('/') === '10/50' && P.shown({ fable: 'claude-fable-9' }).claude.fable === undefined
+                && P.shown({}).claude.fable.join('/') === '8/40' && P.shown().claude.opus.join('/') === '4/20'));
+            // the page's stand-ins (until the first state) are the built list, name for name
+            const src = fsr.readFileSync(pathr.join(__dirname, '..', 'lib', 'ui', 'js', '04-panel-html.js'), 'utf8');
+            const lit = (name) => { const m = new RegExp('const ' + name + '=(\\{[^;]*\\});').exec(src); return m ? new Function('return ' + m[1])() : null; };
+            const sh = P.shown(null, true);
+            ok('★ the page\'s stand-in prices are the built list\'s own', JSON.stringify(lit('MODEL_RATES')) === JSON.stringify({ opus: sh.claude.opus, sonnet: sh.claude.sonnet, haiku: sh.claude.haiku, fable: sh.claude.fable })
+              && JSON.stringify(lit('CODEX_RATES')) === JSON.stringify(sh.codex));
+          } finally { if (prevHome === undefined) delete process.env.RALLY_HOME; else process.env.RALLY_HOME = prevHome; }
+        }
         {
           const tc = (tot, last, win) => JSON.stringify({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: tot, last_token_usage: last, model_context_window: win } } });
           const cx = LM.usageOf([
