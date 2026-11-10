@@ -53,7 +53,8 @@ css_scenarios() {
 js_scenarios() {
   case "$(basename "$1")" in
     03-panel.js|04-panel-html.js|05-panel-send.js|06-history.js|12-thread.js) echo "detail send reply drafts onerow panelstat";;
-    13-bangrun.js)                                          echo "bangrun bang detail";;
+    13-bangrun.js)                                          echo "bangrun bang bangwait detail";;
+    21-reply.js)                                            echo "reply bangwait bangrun send detail";;
     15-attach.js|16-camera.js)                              echo "attach attwait camera detail new";;
     22-whenfree.js)                                         echo "whenfree drafts";;
     24-newsession.js)                                       echo "new yaynew agynew";;
