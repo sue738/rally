@@ -12,6 +12,8 @@
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSCameraUsageDescription</key><string>「カメラで撮る」を押したときに、撮った写真をセッションへの添付にします。 / Takes a photo to attach to a session when you press "Take photo".</string>
+  <key>NSCameraUseContinuityCameraDeviceType</key><true/>
   <key>NSHumanReadableCopyright</key><string>MIT</string>
 </dict>
 </plist>

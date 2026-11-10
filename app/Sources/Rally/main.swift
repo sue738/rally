@@ -48,6 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     let actQueue = DispatchQueue(label: "rally.act")          // what a person just pressed
     let slowQueue = DispatchQueue(label: "rally.slow", attributes: .concurrent)
     let attachQueue = DispatchQueue(label: "rally.attach")
+    let camera = CameraSheet()                                 // カメラで撮る (Camera.swift)
     let shellQueue = DispatchQueue(label: "rally.shell")      // the terminal strip
     let histQueue = DispatchQueue(label: "rally.history")
     let filesQueue = DispatchQueue(label: "rally.files")      // `@` completion, typed against
@@ -718,8 +719,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
     /// Write one attachment, its name rebuilt from scratch: the page can say anything, and this writes into ~.
     func saveAttachment(name: String, base64: String) -> (String?, String?) {
+        guard let data = Data(base64Encoded: base64, options: [.ignoreUnknownCharacters]) else { return (nil, L("空のファイルです", "The file is empty")) }
+        return saveAttachment(name: name, data: data)
+    }
+    func saveAttachment(name: String, data: Data) -> (String?, String?) {
         let MAXB = 20 * 1024 * 1024
-        guard let data = Data(base64Encoded: base64, options: [.ignoreUnknownCharacters]), !data.isEmpty else { return (nil, L("空のファイルです", "The file is empty")) }
+        if data.isEmpty { return (nil, L("空のファイルです", "The file is empty")) }
         if data.count > MAXB { return (nil, L("大きすぎます(上限20MB)", "Too large (limit 20MB)")) }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let dir = Env.get("ATTACHMENTS") ?? (home + "/.rally/attachments")
@@ -1275,6 +1280,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                     self.call("window.__kanban.attached(\(j))")
                 }
             }
+        case "camera":
+            // カメラで撮る: a sheet with the camera's picture and 撮る (Camera.swift); the photo is saved as an attachment
+            // is, and the page is told its path. A selftest gets a drawn picture: it never turns the camera on.
+            let token = (body["token"] as? String) ?? ""
+            let answer: (Data?, String?) -> Void = { data, problem in
+                self.attachQueue.async {
+                    var obj: [String: Any] = ["token": token]
+                    if let data = data {
+                        let res = self.saveAttachment(name: "camera.jpg", data: data)
+                        if let p = res.0 { obj["path"] = p; obj["name"] = (p as NSString).lastPathComponent }
+                        else { obj["error"] = res.1 ?? L("保存できません", "Could not save") }
+                    } else if let problem = problem { obj["error"] = problem }
+                    else { obj["cancelled"] = true }
+                    self.logLine(["ev": "camera", "saved": ((obj["path"] as? String) ?? "") as Any, "error": ((obj["error"] as? String) ?? "") as Any, "bytes": data?.count ?? 0])
+                    if let d = try? JSONSerialization.data(withJSONObject: obj), let j = String(data: d, encoding: .utf8) {
+                        self.call("window.__kanban.camera(\(j))")
+                    }
+                }
+            }
+            if selftesting { answer(CameraSheet.fixtureJPEG(), nil) } else { camera.begin(on: window, done: answer) }
         case "pr":
             let args = ["pr", "--as", (body["agent"] as? String) ?? "", "--session", (body["session"] as? String) ?? ""]
             DispatchQueue.global(qos: .userInitiated).async {

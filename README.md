@@ -104,6 +104,8 @@ a bill (`$?` when a model has no known rate; none for Codex).
   - A message starting with `!` runs in the session's bash mode, and a `! command` the agent suggests in its
     answer carries **▶ Run**: one click types it into the session's terminal (opened or resumed in the panel if need be),
     and its output lands in the conversation.
+  - **+file** attaches files (paste and drop work too). **+camera** takes one photo, with this Mac's camera or an
+    iPhone nearby, and attaches it; ＋ New has both.
 - **Use the session's real terminal.** A Claude card's panel opens on `claude attach`
   for a background session, or **Resume here** for one that is not running.
   Codex and Antigravity sessions reopen with `codex resume` / `agy --conversation`.
@@ -157,6 +159,8 @@ on disk.
 - **Written:** Rally's own files under `~/.rally/` (backlog, queue, run logs,
   attachments, caches; the folder is yours only). An agent is only written to when you send, start or finish.
   Board-run git commands turn off a repository's own filter and textconv drivers, so opening a card never runs them.
+- **Camera:** on only while the sheet **+camera** opens is up (macOS asks for the permission the first time). The one
+  photo you take is saved under `~/.rally/attachments/`; nothing else is recorded.
 - **Update check:** once a day the app asks GitHub for this repository's latest release
   (`api.github.com/repos/sue738/rally/releases/latest`, with the app's version as its User-Agent). A newer one shows
   in the Rally menu and as one notification; nothing is downloaded. `RALLY_NO_UPDATE_CHECK=1` turns it off.

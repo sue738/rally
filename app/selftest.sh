@@ -35,7 +35,7 @@ if [ -n "${SELFTEST_REAL_CLAUDE:-}" ]; then
     echo "SELFTEST_REAL_CLAUDE=1 needs RALLY_SELFTEST_SESSION and RALLY_SELFTEST_SESSION2 (scratch sessions made for it)"; exit 2
   fi
 fi
-scenarios=("$@"); [ ${#scenarios[@]} -eq 0 ] && scenarios=(view zoom worker new send detail resize finish wip term pty attach keys kbd notify termsize split close views panelterm ptycache shellenv termcmd askwire askq reply attwait homesend bang bangrun model yaynew grips askpop cardstep qmark onerow shifttype termime ptyglyph typekeys keysteal uismall listdock termui panelstat pendpage jobspage panelacts whenfree drafts histscroll takeover termblack persist keybind rename controls codexterm covered agynew layout)
+scenarios=("$@"); [ ${#scenarios[@]} -eq 0 ] && scenarios=(view zoom worker new send detail resize finish wip term pty attach keys kbd notify termsize split close views panelterm ptycache shellenv termcmd askwire askq reply attwait camera homesend bang bangrun model yaynew grips askpop cardstep qmark onerow shifttype termime ptyglyph typekeys keysteal uismall listdock termui panelstat pendpage jobspage panelacts whenfree drafts histscroll takeover termblack persist keybind rename controls codexterm covered agynew layout)
 SCRATCH="$(mktemp -d)"
 # the scratch holds a copy of the app: removed however the run ends
 trap 'rm -rf "$SCRATCH"' EXIT

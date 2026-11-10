@@ -38,6 +38,7 @@ The files are split by feature, but they are not modules:
 | `12-thread.js` | `historyHtml` / `renderHistory`: drawing the conversation |
 | `13-bangrun.js` | ▶ 実行 beside a `! command` in an answer: typed into the session's terminal in bash mode, as a `!` from the message box is |
 | `15-attach.js` | attachments: paste, drop, upload, chips |
+| `16-camera.js` | カメラで撮る: the button beside +file, the photo the app's camera sheet took put in the box as a chip |
 | `18-compose.js` | the message box: skills picker, auto-grow, sent history, @file completion, drop on the panel |
 | `21-reply.js` | echo of a send, replying to one message, the thinking indicator and spinner |
 | `22-whenfree.js` | 今の作業後に送る: the send row's chip and ⌥⏎, held messages at the foot of the thread (今すぐ送る / 取り消す), typing them into the app's own terminal once idle |
