@@ -6,7 +6,7 @@ if(!window.Terminal)return {ok:false,bad:['no xterm']};
 const host=document.createElement('div');host.style.cssText='position:fixed;left:-2000px;top:0;width:900px;height:400px';document.body.appendChild(host);
 const xt=new Terminal({cols:100,rows:12});xt.open(host);
 const R='\x1b[38;5;244m'+'─'.repeat(70)+' rally-session-log-reading ─\x1b[39m',R2='\x1b[38;5;244m'+'─'.repeat(100)+'\x1b[39m';
-const draw=line=>new Promise(r=>xt.write('\x1b[2J\x1b[H'+'Claude Code v2.1.318\r\n\r\n'+R+'\r\n'+line+'\r\n'+R2+'\r\n  …/tmp · Opus 5.5 high\r\n',r));
+const draw=line=>new Promise(r=>xt.write('\x1b[2J\x1b[H'+'Claude Code v2.1.318\r\n\r\n'+R+'\r\n'+line+'\r\n'+R2+'\r\n  …/tmp · Opus 5.5 high\r\n\x1b[4;4H',r));
 const p={xt};
 try{
   await draw('\x1b[39m❯ \x1b[2mTry "how do I log an error?"\x1b[0m');
@@ -17,6 +17,12 @@ try{
   b=ptyInputBox(p);out.words=b;
   expect('words in the box are read',!!b&&b.text==='テストの文です'&&!b.bash);
   expect('… and ptyInputHas sees them (a lost Enter is pressed again)',ptyInputHas(p,'テストの文です'));
+  await new Promise(r=>xt.write('\x1b[1;1H',r));
+  b=ptyInputBox(p);out.wordsCursorAbove=b;
+  expect('past output between rules is ignored when the cursor is outside the box',b===null&&!ptyInputHas(p,'テストの文です'));
+  await new Promise(r=>xt.write('\x1b[4;8H',r));
+  b=ptyInputBox(p);out.wordsCursorInBox=b;
+  expect('a real draft stays protected while the cursor is inside the box',!!b&&b.text==='テストの文です'&&ptyInputHas(p,'テストの文です'));
   await draw('\x1b[38;5;211m! \x1b[39mgh api -X PATCH repos/x');
   b=ptyInputBox(p);out.bash=b;
   expect('a shell line is told apart',!!b&&b.bash&&/gh api/.test(b.text));

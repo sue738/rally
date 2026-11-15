@@ -96,6 +96,7 @@ function parseArgs(argv) {
     // back, or the held line the page drew (composed) never matched the queued one (it showed twice) and the session read NFD
     else if (a === '--text') { const v = argv[++i]; o.text = typeof v === 'string' ? v.normalize('NFC') : v; }
     else if (a === '--session') o.session = argv[++i];
+    else if (a === '--turn') o.turn = argv[++i];
     else if (a === '--cwd') o.dirArg = argv[++i];
     else if (a === '--mtime') o.mtime = argv[++i];
     else if (a === '--include') o.include = argv[++i];
@@ -416,9 +417,10 @@ async function main() {
     // one shot for the app: every file a session wrote or edited, with git's diff
     const sess = Board.sessionRecord({ agent: o.agentName, id: o.session, hours: o.hours || 24, dirs: o.dirs });
     if (!sess) return process.stdout.write(Text.json({ files: [], error: tr('セッションが見つかりません') }));
-    const m = require('../lib/made.js').forSession(sess);
-    const paths = [...(m.edited || []), ...(m.files || [])].sort((a, b) => b.t - a.t).map((f) => f.path);
-    return process.stdout.write(Text.json({ agent: o.agentName, session: o.session, ...require('../lib/changes.js').of(paths), review: ((R) => { R.collect(); return R.get(o.agentName, o.session); })(require('../lib/review.js')) }));
+    // --turn N / last: only what one turn changed (lib/turns.js)
+    const m = o.turn ? null : require('../lib/made.js').forSession(sess);
+    const paths = m ? [...(m.edited || []), ...(m.files || [])].sort((a, b) => b.t - a.t).map((f) => f.path) : [];
+    return process.stdout.write(Text.json({ agent: o.agentName, session: o.session, ...(o.turn ? require('../lib/turns.js').forSession(sess, o.turn) : require('../lib/changes.js').of(paths)), review: ((R) => { R.collect(); return R.get(o.agentName, o.session); })(require('../lib/review.js')) }));
   }
   if (o.command === 'diagnose') {
     // 使い方診断 (lib/diagnose.js): count the last --days days and write them, with the prompt for a new session, into a
@@ -443,7 +445,7 @@ async function main() {
     // one shot for the app: another model reads what a session changed (lib/review.js); its findings come with `changes`
     try {
       const sess = Board.sessionRecord({ agent: o.agentName, id: o.session, hours: o.hours || 24, dirs: o.dirs });
-      return process.stdout.write(Text.json(require('../lib/review.js').startFor({ agent: o.agentName, id: o.session, sess, model: o.model })));
+      return process.stdout.write(Text.json(require('../lib/review.js').startFor({ agent: o.agentName, id: o.session, sess, model: o.model, turn: o.turn })));
     } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }
   }
   if (o.command === 'view') {

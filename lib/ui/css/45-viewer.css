@@ -97,3 +97,12 @@ header #pendall.on,header #new.on{color:var(--fg);background:var(--hover)}
 #viewer .vemsg{color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#viewer .vemsg.bad{color:var(--bad)}
 #viewer .vebar .vesave{background:var(--info);color:var(--bg);border-radius:999px;padding:4px 14px}
 #viewer .vebar .vesave:hover{background:var(--info);color:var(--bg);filter:brightness(1.08)}
+/* 全体 / ターンごと and the turn stepper (87-viewer.js changesScopeHtml) */
+#viewer .vtabs{align-items:center}
+#viewer .vscope{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:6px;padding:1px;margin-right:6px}
+#viewer .vscope button{padding:2px 8px}
+#viewer .vturn{display:inline-flex;align-items:center;gap:2px;margin-right:8px;font-size:var(--fs-small);color:var(--dim)}
+#viewer .vturn button{padding:2px 6px}
+#viewer .vturn button:disabled{opacity:.35;cursor:default;background:transparent}
+#viewer .vtn{font-variant-numeric:tabular-nums;color:var(--fg)}
+#viewer .vturnmeta .vtsaid{color:var(--fg);font-size:var(--fs-small);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

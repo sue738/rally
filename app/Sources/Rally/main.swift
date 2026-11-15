@@ -864,8 +864,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             }
         case "changes":
             let agent = (body["agent"] as? String) ?? "", session = (body["session"] as? String) ?? ""
+            // turn: one turn's change only (lib/turns.js), "last" or its number
+            var cargs = ["changes", "--as", agent, "--session", session]
+            if let tn = body["turn"] as? String, !tn.isEmpty { cargs += ["--turn", tn] }
             filesQueue.async {
-                let (out, code) = self.runNode(["changes", "--as", agent, "--session", session])
+                let (out, code) = self.runNode(cargs)
                 if code == 0, (try? JSONSerialization.jsonObject(with: Data(out.utf8))) != nil {
                     self.call("window.__kanban.changes(\(out))")
                 } else if let d = try? JSONSerialization.data(withJSONObject: ["agent": agent, "session": session, "files": [], "error": L("変更を読めませんでした", "Could not read the changes")]),
@@ -940,6 +943,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             // 別のモデルで見てもらう: one review of what a session changed (lib/review.js); the result comes with `changes`
             var args = ["review", "--as", (body["agent"] as? String) ?? "", "--session", (body["session"] as? String) ?? ""]
             if let m = body["model"] as? String, !m.isEmpty { args += ["--model", m] }
+            if let tn = body["turn"] as? String, !tn.isEmpty { args += ["--turn", tn] }
             slowQueue.async { self.ack("review", self.runNode(args)) }
         case "wip":
             // 棚卸し: read the tail of one session and cache what is still open

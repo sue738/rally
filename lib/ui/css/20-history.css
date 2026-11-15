@@ -4,6 +4,8 @@
 .hist .turn.mark::before,.hist .turn.mark::after{content:'';flex:1;border-top:1px dashed var(--line)}
 .hist .turn.user{border-left:0;background:color-mix(in srgb,var(--info) 13%,transparent);border-radius:12px 12px 4px 12px;padding:8px 12px;margin-left:32px}
 .hist .turn.assistant{border-left-color:color-mix(in srgb,var(--ok) 55%,var(--line))}
+.hist .turn.failure{border-left-color:var(--bad);background:color-mix(in srgb,var(--bad) 9%,transparent)}
+.hist .turn.failure .who{color:var(--bad);font-weight:600}
 /* the left rail folds the answer; the text stays selectable */
 .hist .turn.foldable{position:relative}
 .hist .turn.foldable .fold{position:absolute;left:-16px;top:0;bottom:0;width:20px;cursor:zoom-out;border-radius:3px;transition:background .12s ease}

@@ -1470,11 +1470,18 @@ console.log('== lanes from the process and from subagents ==');
   const real = xone('real', [meta(t0, 'real', 'codex-tui', 'cli'), umsg(t0, 'fix the bug'), amsg(t0 + 5000, '直しました'), umsg(t0 + 400000, 'and this'), amsg(t0 + 405000, '直しました')]);
   const realCard = Live.cards([real], Date.now())[0];
   ok('a genuine codex CLI session still shows as yours', real.automated === false && realCard.headless === false && realCard.column === 'answered');
+  const work = xone('work', [line(t0, 'session_meta', { id: 'work', session_id: 'work', cwd: '/p', originator: 'codex_exec', source: 'exec', thread_source: 'user' }),
+    umsg(Date.now() - 1000, 'fix the bug'), line(Date.now() - 900, 'event_msg', { type: 'task_started' })]);
+  const workCard = Live.cards([work], Date.now())[0];
+  ok('★ Codex Work: a user-started thread is shown in Working with a human turn', work.entrypoint === 'cli' && workCard.column === 'working' && !workCard.headless && workCard.humanTurns === 1);
+  const scripted = xone('scripted', [meta(t0, 'scripted', 'codex_exec', 'exec'), umsg(Date.now() - 1000, 'scripted input')]);
+  const scriptedCard = Live.cards([scripted], Date.now())[0];
+  ok('★ codex exec without a user thread stays headless', scripted.entrypoint === 'sdk-cli' && scriptedCard.headless && scriptedCard.humanTurns === 0);
   const ab = xone('ab', [meta(t0, 'ab', 'codex-tui', 'cli'), umsg(t0, 'fix the bug'), amsg(t0 + 5000, 'working on it'), line(t0 + 6000, 'event_msg', { type: 'turn_aborted', reason: 'interrupted' })]);
   ok('★ a turn you aborted is not DONE — the next move is yours', Live.classify(ab, Date.now()).column === 'needs-you' && /interrupted/.test(Live.classify(ab, Date.now()).reason));
   {
     // codex multi-agent: a child thread's session_meta carries its parent's session_id, its own id and parent_thread_id
-    const kid = xone('kid', [line(t0, 'session_meta', { session_id: 'par-1', id: 'kid-1', parent_thread_id: 'par-1', cwd: '/p', originator: 'codex_exec', source: { subagent: { thread_spawn: { parent_thread_id: 'par-1', depth: 1, agent_path: '/root/review_claims', agent_nickname: 'Sagan' } } }, agent_nickname: 'Sagan', agent_path: '/root/review_claims' }), umsg(t0, 'check the claims'), amsg(t0 + 5000, 'done')]);
+    const kid = xone('kid', [line(t0, 'session_meta', { session_id: 'par-1', id: 'kid-1', parent_thread_id: 'par-1', cwd: '/p', originator: 'codex_exec', source: { subagent: { thread_spawn: { parent_thread_id: 'par-1', depth: 1, agent_path: '/root/review_claims', agent_nickname: 'Sagan' } } }, agent_nickname: 'Sagan', agent_path: '/root/review_claims' }), umsg(t0, 'check the claims'), amsg(t0 + 5000, 'done'), line(t0 + 6000, 'session_meta', { id: 'par-1', session_id: 'par-1', cwd: '/p', originator: 'codex_exec', source: 'exec', thread_source: 'user' })]);
     const par = xone('par', [line(t0, 'session_meta', { session_id: 'par-1', id: 'par-1', cwd: '/p', originator: 'codex_exec', source: 'exec' }), umsg(t0, 'review this')]);
     ok('★ codex: a subagent is its own session (its id, not the parent\'s session_id) under its parent, named for its task',
       kid.id === 'kid-1' && kid.parentId === 'par-1' && kid.agentTask === 'review_claims' && kid.agentType === 'Sagan' && par.id === 'par-1' && par.parentId === null);
@@ -1946,6 +1953,8 @@ console.log('== view: one file for the viewer ==');
     ok('changes: a content line starting with ++ is counted', by2('done.md')[0].added === 1 && by2('done.md')[0].removed === 1);
     ok('changes: one file under two names (a symlink) is listed once', ch2.files.filter((f) => /a(-link)?\.md$/.test(f.path)).length === 1);
     ok('changes: the repository and its branch are named once', ch.roots.length === 1 && !!ch.roots[0].branch);
+    // the temp folder is reached through a symlink on macOS (/var → /private/var): the root does not start the path
+    ok('changes: a file\'s path in its repository is known through a symlinked folder too', by('a.md').rel === 'a.md' && !by('plain.txt').rel);
     {
       // a branch session that commits as it goes: the review is against where it left the base
       const base = require('child_process').execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim();
@@ -1958,6 +1967,56 @@ console.log('== view: one file for the viewer ==');
       git('checkout', '-q', base);
       const f4 = Ch.of([path.join(repo, 'done.md')]).files[0];
       ok('changes: on the base branch it is the last commit, as before', f4 && !Ch.of([path.join(repo, 'done.md')]).roots[0].since && f4.added === 1);
+    }
+    {
+      // turns: what one turn changed, from the file before each Edit / Write that the transcript keeps (originalFile)
+      const Tu = require('../lib/turns.js');
+      const tdir = path.join(root, 'projects', 'slug'); fs.mkdirSync(tdir, { recursive: true });
+      const tf = path.join(tdir, 'turns-session.jsonl');
+      const A = path.join(repo, 'ta.md'), N = path.join(repo, 'tn.js'), S = path.join(repo, '.env.turn'), X = path.join(repo, 'tx.md');
+      let ts = Date.parse('2026-11-13T01:00:00Z');
+      const at = () => new Date(ts += 1000).toISOString();
+      const L = [];
+      const said = (text) => L.push({ type: 'user', timestamp: at(), cwd: repo, message: { role: 'user', content: text } });
+      let id = 0;
+      const edit = (name, file, result, isError) => {
+        const u = 'tu' + (++id);
+        L.push({ type: 'assistant', timestamp: at(), message: { role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'tool_use', id: u, name, input: { file_path: file } }] } });
+        L.push({ type: 'user', timestamp: at(), message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: u, content: 'ok', ...(isError ? { is_error: true } : {}) }] }, toolUseResult: result });
+      };
+      said('ひとつめを直して');
+      edit('Write', N, { type: 'create', filePath: N, content: 'x\n', originalFile: null, structuredPatch: [] });
+      edit('Edit', A, { filePath: A, originalFile: 'one\n', structuredPatch: [{ oldStart: 1, oldLines: 1, newStart: 1, newLines: 2, lines: [' one', '+two'] }] });
+      edit('Write', S, { type: 'update', filePath: S, originalFile: 'K=1\n', structuredPatch: [] });
+      said('まだ直っていない');
+      edit('Edit', A, { filePath: A, originalFile: 'one\ntwo\n', structuredPatch: [{ oldStart: 2, oldLines: 1, newStart: 2, newLines: 1, lines: [' one', '-two', '+TWO'] }] });
+      edit('Edit', N, 'Error: refused', true);
+      edit('Edit', X, { filePath: X, structuredPatch: [{ oldStart: 3, oldLines: 1, newStart: 3, newLines: 1, lines: ['-a', '+b'] }] });
+      const D = path.join(repo, 'td.md');
+      edit('Write', D, { type: 'create', filePath: D, content: 'tmp\n', originalFile: null, structuredPatch: [] });
+      said('質問だけ');
+      fs.writeFileSync(tf, L.map((x) => JSON.stringify(x)).join('\n') + '\n');
+      fs.writeFileSync(A, 'one\nTWO\n'); fs.writeFileSync(N, 'x\n'); fs.writeFileSync(S, 'K=2\n'); fs.writeFileSync(X, 'b\n');
+      const sc = Tu.scan(tf);
+      ok('★ turns: a turn is what follows one of your messages; only turns that edited a file count', sc.length === 2 && sc[0].text === 'ひとつめを直して' && sc[1].text === 'まだ直っていない');
+      const last = Tu.changes(tf, 'last');
+      const lb = (n) => last.files.find((f) => f.path.endsWith(n));
+      ok('★ turns: the last turn shows only its own change (two → TWO), not the first turn\'s',
+        last.turn.n === 2 && last.turn.of === 2 && last.turn.last && lb('ta.md').added === 1 && lb('ta.md').removed === 1 && /-two/.test(lb('ta.md').diff) && /\+TWO/.test(lb('ta.md').diff) && lb('ta.md').now);
+      ok('turns: an edit that was refused changed nothing', !lb('tn.js') && last.turn.edits === 3);
+      ok('turns: a file made in the turn and gone since is said deleted, not a failed diff', lb('td.md') && lb('td.md').created && lb('td.md').deleted && !lb('td.md').error);
+      ok('turns: with no file-before in the transcript, the edit\'s own hunks stand in, marked', lb('tx.md') && lb('tx.md').approx && !lb('tx.md').now && /\+b/.test(lb('tx.md').diff));
+      const first = Tu.changes(tf, 1);
+      const fb = (n) => first.files.find((f) => f.path.endsWith(n));
+      ok('★ turns: an earlier turn ends where the next turn\'s edit began (its line numbers are that time\'s, not now)',
+        first.turn.n === 1 && !first.turn.last && fb('ta.md').added === 1 && fb('ta.md').removed === 0 && /\+two/.test(fb('ta.md').diff) && !/TWO/.test(fb('ta.md').diff) && !fb('ta.md').now);
+      ok('turns: a file the turn created is new, and all of it is the change', fb('tn.js').created && fb('tn.js').added === 1 && fb('tn.js').now);
+      ok('★ turns: keys and credentials are named, never shown', fb('.env.turn') && fb('.env.turn').secret && !fb('.env.turn').diff);
+      ok('turns: a turn number out of range is the nearest one', Tu.changes(tf, 9).turn.n === 2 && Tu.changes(tf, 0).turn.n === 2 && Tu.changes(tf, -3).turn.n === 1);
+      ok('turns: another agent\'s session says per-turn diffs are Claude Code\'s', /Claude Code/.test(Tu.forSession({ agent: 'codex', file: tf }, 'last').error || ''));
+      const none = path.join(tdir, 'quiet.jsonl'); fs.writeFileSync(none, JSON.stringify({ type: 'user', timestamp: at(), message: { role: 'user', content: 'hi' } }) + '\n');
+      ok('turns: a session that edited nothing has no turn to show', Tu.changes(none, 'last').turn.of === 0 && Tu.changes(none, 'last').files.length === 0);
+      ok('turns: files carry their path in the repository', lb('ta.md').rel === 'ta.md' && fb('tn.js').rel === 'tn.js');
     }
   } finally {
     if (was === undefined) delete process.env.RALLY_FILES_ROOT; else process.env.RALLY_FILES_ROOT = was;
@@ -2274,6 +2333,25 @@ console.log('== history: a message delivered from another session ==');
     ok('★ history (codex): a replayed line is shown once, as the reader counts it',
       turns.filter((x) => x.text === 'replayed answer').length === 1 && turns.filter((x) => x.kind === 'tool').length === 1);
     ok('history (codex): the same words asked twice are still two turns', turns.filter((x) => x.kind === 'user' && x.text === 'hi').length === 2);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+}
+{
+  // Codex can create a session and then fail before answering. The runtime's
+  // task_complete error is the only error in its transcript; stderr is separate.
+  const LM = require('../lib/lastMessage.js');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'rally-cxfail-'));
+  const f = path.join(d, 'rollout.jsonl');
+  const at = new Date().toISOString();
+  const failed = { timestamp: at, type: 'event_msg', payload: { type: 'task_complete', error: { message: 'Token refresh failed. Sign in again.' } } };
+  fs.writeFileSync(f, [
+    { timestamp: at, type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'start here' }] } },
+    failed, failed,
+    { timestamp: at, type: 'event_msg', payload: { type: 'task_complete' } },
+  ].map((x) => JSON.stringify(x)).join('\n'));
+  try {
+    const turns = LM.history({ agent: 'codex', file: f }).turns;
+    ok('★ history (codex): a failed start shows its runtime error once after the request',
+      turns.length === 2 && turns[0].kind === 'user' && turns[1].kind === 'failure' && /Sign in again/.test(turns[1].text));
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 }
 

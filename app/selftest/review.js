@@ -34,5 +34,33 @@ try{
   openDetail(c,false,{focus:false,view:'talk'});await sleep(300);
   expect('… and its panel has the button',!!$('#mrevhint'));
   c.reviewHint=was;
+  // ターンごと: the switch asks for the newest turn, its words and number show, [ asks for the one before, a file whose
+  // line numbers are not today's takes no comments, a late answer for 全体 is not drawn, a review asks for the turn on screen
+  closeDetail('x');changesScope='all';posted.length=0;
+  openChanges(c);await sleep(200);
+  window.__kanban.changes({agent:c.agent,session:c.id,roots:[],files:[{path:'/tmp/rv/a.js',root:'/tmp/rv',git:true,diff:'@@ -1,2 +1,3 @@\n a\n+b\n c',added:1,removed:0}]});await sleep(100);
+  const sbtn=s=>viewer.box.querySelector('.vscope button[data-s="'+s+'"]');
+  expect('the change viewer has 全体 / ターンごと, 全体 chosen',!!sbtn('all')&&!!sbtn('turn')&&sbtn('all').classList.contains('on'));
+  sbtn('turn').click();await sleep(100);
+  const cq=()=>posted.filter(m=>m.type==='changes').pop()||{};out.tq=cq();
+  expect('… ターンごと asks for the newest turn',viewer.scope==='turn'&&cq().turn==='last');
+  const turnAns=(n,now)=>({agent:c.agent,session:c.id,roots:[],turn:{n,of:3,since:Date.now()-60000,text:'まだ直っていない '+n,edits:2,last:n===3},
+    files:[{path:'/tmp/rv/a.js',root:'/tmp/rv',git:true,diff:'@@ -1,2 +1,2 @@\n a\n-b\n+B',added:1,removed:1,...(now?{now:true}:{})}]});
+  window.__kanban.changes(turnAns(3,true));await sleep(100);
+  const vtn=()=>(viewer.box.querySelector('.vtn')||{}).textContent||'';out.vtn=vtn();
+  expect('… which says which turn and what you asked',/3\/3/.test(vtn())&&/まだ直っていない 3/.test(viewer.box.querySelector('.vturnmeta').textContent));
+  expect('… and its lines take comments (they are today\'s)',!!viewer.box.querySelector('.vsec .dl[data-ln="n2"]'));
+  window.__kanban.changes({agent:c.agent,session:c.id,roots:[],files:[{path:'/tmp/rv/z.js',root:'/tmp/rv',git:true,diff:'@@ -1 +1 @@\n-z\n+Z',added:1,removed:1}]});await sleep(100);
+  expect('a late answer for 全体 is not drawn over the turn',/3\/3/.test(vtn())&&!viewer.box.querySelector('.vsec .vsh a[data-p="/tmp/rv/z.js"]'));
+  document.dispatchEvent(new KeyboardEvent('keydown',{key:'[',bubbles:true,cancelable:true}));await sleep(100);
+  expect('[ asks for the turn before',cq().turn==='2');
+  window.__kanban.changes(turnAns(2,false));await sleep(100);
+  expect('… a past turn whose file changed again has no comment lines, and says why',/2\/3/.test(vtn())&&!viewer.box.querySelector('.vsec .dl')&&/コメントを付けられません|take no comments/.test(viewer.box.querySelector('.vturnmeta').textContent));
+  const go2=viewer.box.querySelector('.vrevgo');if(go2)go2.click();await sleep(100);
+  const rq2=posted.filter(m=>m.type==='review').pop();out.rq2=rq2;
+  expect('a review from ターンごと is of the turn on screen',!!rq2&&rq2.turn==='2');
+  document.dispatchEvent(new KeyboardEvent('keydown',{key:'t',bubbles:true,cancelable:true}));await sleep(100);
+  expect('t goes back to 全体',viewer.scope==='all'&&!('turn' in cq()));
+  changesScopeSet('all');
 }finally{window.post=p0;try{closeViewer()}catch(e){}closeDetail('x');for(const k of Object.keys(diffNotes||{}))delete diffNotes[k]}
 return {ok:bad.length===0,bad,out};

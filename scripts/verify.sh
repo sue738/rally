@@ -62,6 +62,7 @@ js_scenarios() {
     43-askpop.js)                                            echo "askpop askwire askq";;
     51-strip.js|54-pty.js|57-panel-term.js|60-pty-park.js)  echo "term pty panelterm ptycache split close termui termask inputbox";;
     75-keys.js|01-keymap.js|90-help.js|92-keyset.js)        echo "kbd keys keybind qmark";;
+    84-diff.js|87-viewer.js|88-review.js)                   echo "review view detail";;
     78-boot.js|81-palette.js)                               echo "views controls covered palhold away";;
     *)                                                      echo "view detail covered";;
   esac
