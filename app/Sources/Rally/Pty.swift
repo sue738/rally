@@ -86,6 +86,9 @@ final class PtyHost {
         var env = ProcessInfo.processInfo.environment
         for k in env.keys where k == "CLAUDECODE" || k.hasPrefix("CLAUDE_CODE_") || k == "CLAUDE_JOB_DIR" || k.hasPrefix("CLAUDE_SESSION") { env.removeValue(forKey: k) }
         if env["BROWSER"] == "true" { env.removeValue(forKey: "BROWSER") }   // Claude Code's: no browser would ever open
+        // The terminal draws colour (TERM/COLORTERM are set below); an app started from a script
+        // that said NO_COLOR would otherwise turn every program in it black and white.
+        env.removeValue(forKey: "NO_COLOR"); env.removeValue(forKey: "CLICOLOR")
         for (k, v) in extra { env[k] = v }
         return env
     }
