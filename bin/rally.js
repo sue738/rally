@@ -77,6 +77,11 @@ function parseArgs(argv) {
     else if (a === '--now') o.now = true;
     else if (a === '--plain') o.plain = true;
     else if (a === '--delivered') o.delivered = true;
+    else if (a === '--confirm-typed') o.confirmTyped = true;
+    else if (a === '--claim-typed') o.claimTyped = true;
+    else if (a === '--release-typed') o.releaseTyped = true;
+    else if (a === '--typed-at') o.typedAt = +argv[++i];
+    else if (a === '--token') o.claimToken = argv[++i];
     else if (a === '--json') o.json = true;
     else if (a === '--all') o.all = true;
     else if (a === '--enrich') o.enrich = true;
@@ -467,9 +472,9 @@ async function main() {
     const Q = require('../lib/queue.js');
     try {
       if (o.now) { const r = Board.sendHeldNow({ agent: o.agentName, id: o.session, key: o.key, type: !!o.typeInto, dirs: o.dirs }); return process.stdout.write(Text.json(r.error ? r : { ok: true, ...r })); }
-      const r = o.edit ? Q.edit({ agent: o.agentName, id: o.session, key: o.key, text: o.text }) : o.cancel ? Q.remove({ agent: o.agentName, id: o.session, key: o.key, plain: !!o.plain, delivered: !!o.delivered }) : o.retry ? Q.retry({ agent: o.agentName, id: o.session }) : Q.add({ agent: o.agentName, id: o.session, text: o.text, model: o.model });
+      const r = o.claimTyped ? Q.claimTyped({ agent: o.agentName, id: o.session, key: o.key }) : o.releaseTyped ? Q.release({ agent: o.agentName, id: o.session, key: o.key, token: o.claimToken, done: false }) : o.confirmTyped ? Q.confirmTyped({ agent: o.agentName, id: o.session, key: o.key, token: o.claimToken, typedAt: o.typedAt }) : o.edit ? Q.edit({ agent: o.agentName, id: o.session, key: o.key, text: o.text }) : o.cancel ? Q.remove({ agent: o.agentName, id: o.session, key: o.key, plain: !!o.plain, delivered: !!o.delivered }) : o.retry ? Q.retry({ agent: o.agentName, id: o.session }) : Q.add({ agent: o.agentName, id: o.session, text: o.text, model: o.model });
       return process.stdout.write(Text.json({ ok: true, ...r }));
-    } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }
+    } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e), ...(o.claimTyped ? { claimTyped: true, key: o.key } : {}) })); process.exitCode = 1; return; }
   }
   if (o.command === 'label') {
     // one shot for the app: name/colour one session, kept in ~/.rally/labels.json

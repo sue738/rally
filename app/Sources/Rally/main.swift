@@ -752,8 +752,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     func ack(_ op: String, _ r: (String, Int32)) {
         let (out, code) = r
         var obj: [String: Any] = ["op": op]
-        if code != 0 { obj["error"] = String(out.prefix(300)) }
-        else if let j = try? JSONSerialization.jsonObject(with: Data(out.utf8)) as? [String: Any], let e = j["error"] as? String { obj["error"] = e }
+        let parsed = try? JSONSerialization.jsonObject(with: Data(out.utf8)) as? [String: Any]
+        if op == "queue", let j = parsed, (j["claimTyped"] as? Bool) == true {
+            obj["claimTyped"] = true
+            obj["key"] = j["key"]
+            obj["token"] = j["token"]
+        }
+        if op == "queue", let j = parsed, let unsure = j["unsure"] as? Bool { obj["unsure"] = unsure }
+        if let j = parsed, let e = j["error"] as? String { obj["error"] = e }
+        else if code != 0 { obj["error"] = String(out.prefix(300)) }
         if let d = try? JSONSerialization.data(withJSONObject: obj), let j = String(data: d, encoding: .utf8) {
             call("window.__kanban.ack(\(j))")
         }
@@ -918,6 +925,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             if (body["now"] as? Bool) == true {
                 args.append("--now")
                 if (body["typeInto"] as? Bool) == true, !selftesting { args.append("--type") }
+            }
+            else if (body["claimTyped"] as? Bool) == true { args.append("--claim-typed") }
+            else if (body["releaseTyped"] as? Bool) == true {
+                args += ["--release-typed", "--token", (body["token"] as? String) ?? ""]
+            }
+            else if (body["confirmTyped"] as? Bool) == true {
+                args += ["--confirm-typed", "--token", (body["token"] as? String) ?? "", "--typed-at", String((body["typedAt"] as? Int) ?? 0)]
             }
             else if (body["cancel"] as? Bool) == true {
                 args.append("--cancel")

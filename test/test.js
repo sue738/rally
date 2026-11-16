@@ -3566,6 +3566,66 @@ console.log('== board server ==');
         scratchStore('QUEUE');
       }
       {
+        // A Codex TUI send is kept until its rollout contains the user turn.
+        const Q = require('../lib/queue.js');
+        const sid = '7cde1111-0000-4000-8000-000000000001';
+        process.env.RALLY_QUEUE = path.join(tmp, 'queue-codex-typed.json');
+        Q.write([]);
+        const at = Date.now();
+        Q.add({ agent: 'codex', id: sid, text: 'first held instruction', attachments: ['/att/one.png'], whenFree: true, ours: true });
+        const card = [{ agent: 'codex', id: sid }];Q.apply(card);
+        ok('★ Codex held: an attached file path reaches the terminal-side held record', card[0].held[0].attachments[0] === '/att/one.png');
+        const first = Q.read()[0];
+        const firstClaim = Q.claimTyped({ agent: 'codex', id: sid, key: first.key });
+        const duplicateClaim = Q.claimTyped({ agent: 'codex', id: sid, key: first.key });
+        ok('★ Codex held: a second delivery cannot claim an instruction while its first paste is in flight', !!firstClaim.token && duplicateClaim.claimed && !duplicateClaim.token);
+        const expired = Q.read();expired[0].claim.at -= Q.CLAIM_MS + 1;Q.write(expired);
+        const accidental = [];
+        Q.drain(new Map(), { codexTuiOpen: () => false, resume: i => { accidental.push(i);return { sent: true }; } });
+        ok('★ Codex held: an interrupted paste is marked uncertain instead of sent again', accidental.length === 0 && Q.read()[0].unsure);
+        const restored = Q.read();restored[0].claim = { token: firstClaim.token, at: Date.now(), going: true };delete restored[0].unsure;delete restored[0].fails;Q.write(restored);
+        const uncertain = Q.confirmTyped({ agent: 'codex', id: sid, key: first.key, token: firstClaim.token, typedAt: at, waitMs: 0, readTurns: () => [] });
+        ok('★ Codex held: no recorded user turn keeps the message and stops automatic retry', uncertain.unsure && Q.read().length === 1 && Q.read()[0].unsure && Q.read()[0].fails === Q.MAX_FAILS);
+        Q.write([]);
+        Q.add({ agent: 'codex', id: sid, text: 'first held instruction', whenFree: true, ours: true });
+        Q.add({ agent: 'codex', id: sid, text: 'second held instruction', whenFree: true, ours: true });
+        const key = Q.read()[0].key;
+        const claim = Q.claimTyped({ agent: 'codex', id: sid, key });
+        const confirmed = Q.confirmTyped({ agent: 'codex', id: sid, key, token: claim.token, typedAt: at, waitMs: 0, readTurns: () => [{ kind: 'user', t: at + 1000, text: 'first held instruction' }] });
+        ok('★ Codex held: only the recorded message is removed, and the next waits its turn', confirmed.delivered && Q.read().length === 1 && Q.read()[0].text === 'second held instruction' && Q.gated(Q.read()[0]));
+        Q.write([]);
+        Q.add({ agent: 'codex', id: sid, text: 'look at this\n\n添付ファイル(このパスを読んでください):\n- /att/one.png', attachments: ['/att/one.png'], whenFree: true, ours: true });
+        const imageKey = Q.read()[0].key;
+        const imageClaim = Q.claimTyped({ agent: 'codex', id: sid, key: imageKey });
+        const image = Q.confirmTyped({ agent: 'codex', id: sid, key: imageKey, token: imageClaim.token, typedAt: at, waitMs: 0, readTurns: () => [{ kind: 'user', t: at + 1000, text: 'look at this [Image #1]' }] });
+        ok('★ Codex held: an image changed by the TUI still confirms the matching user turn', image.delivered && Q.read().length === 0);
+        Q.write([]);
+        Q.add({ agent: 'codex', id: sid, text: 'held while the TUI is open', whenFree: true, ours: true });
+        const resumed = [];
+        const opts = { resume: (i) => { resumed.push(i.text); return { sent: true, pid: 1, log: '' }; } };
+        const staleBusy = new Map([[sid, { kind: 'codex', status: 'busy' }]]);
+        Q.drain(staleBusy, { ...opts, codexTuiOpen: () => true });
+        const closed = Q.drain(staleBusy, { ...opts, codexTuiOpen: () => false });
+        ok('★ Codex held: an open TUI keeps it queued; after the TUI closes the background route delivers it', resumed.length === 1 && closed.sent.length === 1 && Q.read().length === 0);
+        const ch = path.join(tmp, 'codex-confirm-home'), cf = path.join(ch, '.codex', 'sessions', '2026', '01', '01', 'rollout.jsonl');
+        fs.mkdirSync(path.dirname(cf), { recursive: true });
+        const stamp = new Date().toISOString(), typedAt = Date.now() - 1000, ck = 'codex-confirm-key';
+        fs.writeFileSync(cf, [
+          { timestamp: stamp, type: 'session_meta', payload: { id: sid, session_id: sid, cwd: ch, source: 'exec' } },
+          { timestamp: stamp, type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'confirmed from rollout' }] } },
+        ].map(x => JSON.stringify(x)).join('\n') + '\n');
+        const cq = path.join(ch, 'queue.json'), ci = path.join(ch, 'index.json');
+        fs.writeFileSync(cq, JSON.stringify({ items: [{ key: ck, agent: 'codex', id: sid, text: 'confirmed from rollout', whenFree: true, ours: true, at: typedAt }] }));
+        fs.writeFileSync(ci, JSON.stringify({ byId: { ['codex:' + sid]: [cf, typedAt, ch] } }));
+        const cliBase = [path.join(__dirname, '..', 'bin', 'rally.js'), 'queue', '--as', 'codex', '--session', sid, '--key', ck];
+        const cliEnv = { ...process.env, HOME: ch, RALLY_QUEUE: cq, RALLY_INDEX: ci };
+        const cliClaim = JSON.parse(require('child_process').execFileSync(process.execPath, [...cliBase, '--claim-typed'], { encoding: 'utf8', env: cliEnv }));
+        const cli = JSON.parse(require('child_process').execFileSync(process.execPath, [...cliBase, '--confirm-typed', '--token', cliClaim.token, '--typed-at', String(typedAt)],
+          { encoding: 'utf8', env: { ...process.env, HOME: ch, RALLY_QUEUE: cq, RALLY_INDEX: ci } }));
+        ok('★ Codex held: the queue CLI confirms a user turn in the rollout before removing the item', cli.delivered && JSON.parse(fs.readFileSync(cq, 'utf8')).items.length === 0);
+        scratchStore('QUEUE');
+      }
+      {
         // 今の作業後に送る: the hold / deliver decision (lib/board.js sendTo, lib/queue.js drain).
         // Everything that could reach a session is stubbed and recorded.
         const Q = require('../lib/queue.js');

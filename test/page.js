@@ -91,7 +91,7 @@ function runPage(saved = {}) {
   };
   const names = Object.keys(scope);
   // `return` the page's own functions so they can be called from here.
-  const body = src + '\n;return {ptyInputBox, ptyInputHas, mdRender, bangCmd, bangMark, sentEchoes, echoRestore, yourOrderSet, effortDefault, yourSorted: () => yourSort(live.cards), laneLocalSet, live: () => live, dlgParse, dlgSeen, askHtml, ptyFixKind, toggleNew, syncPanelBtns, openFirstPanel: () => { openedFirst = false; openFirst(); }, histReconcile, thinkState, palItems, unreadReplies, unreadChip, seenBaseline, awayGroups, awayLine, fwdTargets, seenMapRef: () => seenMap, seenARef: () => seenA, echoTyped, unreadFromOf, isUnread, unreadShown, markSeen, unreadCount, unreadAllRead, seenBase: () => seenBase, histAsk, histPut, histCache, histTouch, clock, matchQuery, searchSuggest, flash, copyId, wfHeldOf, wfLocal, wfSend, wfBusy, moreChips, etaLabel, etaChip, etaSettle, etaTaskChip, prHtml, hist: document.querySelector(\'#mhist\'), body: () => document.querySelector(\'#mbody\'), openDetail, openNew, openPendingAll, pendCounts, wipStart, jobsHtml, whenNext, renderHistory, applyState, render, reasonJa, applyTheme, pendLine, echoSent, sentEchoes, historyHtml, cardSig, thinkState, resumeCell, fuzzy, openPalette, closePalette, arrivals, stuckText, kidsPlan, mdRender, diffRender, diffLines, reviewMessage, openChanges, notesOf, sendNotes, noteHere, renderChangesFor: (j) => window.__kanban.changes(j), linkify, askHtml, qAnswers, qPick, permAnswer, modelVer, famVersions, autoHue, topicKey, parseQuery, matchQuery, flipDeltas, prArrived, prNumOf, qerrText, notifyBar, PAL_ACTIONS, clicks: document.clicks, prMergeable, prFinish, prFinished, prDone, wtHtml, wtNote, wtPost, pendAct, dispatch, pendingToasts, dispatched: (r) => window.__kanban.dispatched(r), newState: () => newRun, pendingNewOf: () => pendingNew, panel: () => panelKey, togglePanel, closeDetail, sel: () => sel, setSel: (k) => { sel = k; }, openFor: () => openFor, boardView: () => boardView, setView, VIEWS, cshow, setCardShow, CARD_FIELDS, CHIP_FIELDS, chipOrder, setCardOrder, orderedChips, cardShowOpen, ptys, ptyEnded, kanban: window.__kanban, sentEchoes, panelView: () => panelView, panelPrefSet, ptyUnpark, setFn: (n, f) => { eval(n + \' = f\'); }, bgNote, bgPopOpen, bgStopTasks, bgPopRefresh, win: window, mountPanelTerm, takeoverWhy, KM_DEFS, KM_GROUPS, KM_PRESETS, kmCanon, kmAct, kmBad, kmSet, kmReset, kmResetAll, kmPreset, kmPresetNow, kmLoad, kmParse, kmKey, kmL, kmLabel, kmText, kmOver: () => kmOver, SHORTCUTS, drawHelp, openKeys, keyDraw, kmCapKey, keyCap: () => keyCap, setKeyCap: (v) => { keyCap = v; }, openViewer, viewEdit, viewSave, viewEditable, viewerNow: () => viewer};';
+  const body = src + '\n;return {ptyInputBox, ptyInputHas, mdRender, bangCmd, bangMark, sentEchoes, echoRestore, yourOrderSet, effortDefault, yourSorted: () => yourSort(live.cards), laneLocalSet, live: () => live, dlgParse, dlgSeen, askHtml, ptyFixKind, toggleNew, syncPanelBtns, openFirstPanel: () => { openedFirst = false; openFirst(); }, histReconcile, thinkState, palItems, unreadReplies, unreadChip, seenBaseline, awayGroups, awayLine, fwdTargets, seenMapRef: () => seenMap, seenARef: () => seenA, echoTyped, unreadFromOf, isUnread, unreadShown, markSeen, unreadCount, unreadAllRead, seenBase: () => seenBase, histAsk, histPut, histCache, histTouch, clock, matchQuery, searchSuggest, flash, copyId, wfHeldOf, wfLocal, wfSend, wfBusy, wfTypeCodexHeld, wfClaimed, moreChips, etaLabel, etaChip, etaSettle, etaTaskChip, prHtml, hist: document.querySelector(\'#mhist\'), body: () => document.querySelector(\'#mbody\'), openDetail, openNew, openPendingAll, pendCounts, wipStart, jobsHtml, whenNext, renderHistory, applyState, render, reasonJa, applyTheme, pendLine, echoSent, sentEchoes, historyHtml, cardSig, thinkState, resumeCell, fuzzy, openPalette, closePalette, arrivals, stuckText, kidsPlan, mdRender, diffRender, diffLines, reviewMessage, openChanges, notesOf, sendNotes, noteHere, renderChangesFor: (j) => window.__kanban.changes(j), linkify, askHtml, qAnswers, qPick, permAnswer, modelVer, famVersions, autoHue, topicKey, parseQuery, matchQuery, flipDeltas, prArrived, prNumOf, qerrText, notifyBar, PAL_ACTIONS, clicks: document.clicks, prMergeable, prFinish, prFinished, prDone, wtHtml, wtNote, wtPost, pendAct, dispatch, pendingToasts, dispatched: (r) => window.__kanban.dispatched(r), newState: () => newRun, pendingNewOf: () => pendingNew, panel: () => panelKey, togglePanel, closeDetail, sel: () => sel, setSel: (k) => { sel = k; }, openFor: () => openFor, boardView: () => boardView, setView, VIEWS, cshow, setCardShow, CARD_FIELDS, CHIP_FIELDS, chipOrder, setCardOrder, orderedChips, cardShowOpen, ptys, ptyEnded, kanban: window.__kanban, sentEchoes, panelView: () => panelView, panelPrefSet, ptyUnpark, setFn: (n, f) => { eval(n + \' = f\'); }, bgNote, bgPopOpen, bgStopTasks, bgPopRefresh, win: window, mountPanelTerm, takeoverWhy, KM_DEFS, KM_GROUPS, KM_PRESETS, kmCanon, kmAct, kmBad, kmSet, kmReset, kmResetAll, kmPreset, kmPresetNow, kmLoad, kmParse, kmKey, kmL, kmLabel, kmText, kmOver: () => kmOver, SHORTCUTS, drawHelp, openKeys, keyDraw, kmCapKey, keyCap: () => keyCap, setKeyCap: (v) => { keyCap = v; }, openViewer, viewEdit, viewSave, viewEditable, viewerNow: () => viewer};';
   const fn = new Function(...names, body);
   // a key press as the board's own listeners get it, in the order they were added
   const key = (k) => {
@@ -117,6 +117,46 @@ try { api = runPage(); ok('the script executes against a DOM', !!api && typeof a
 catch (e) { ok(`the script executes against a DOM — ${e.message}`, false); }
 
 if (api) {
+  try {
+    const queued = { agent: 'codex', id: 'codex-held', column: 'working', queuedOnly: true, reason: '送るメッセージを預かっています(手が空いたら届き、動き出します)', held: [{ key: 'one', text: 'next' }] };
+    api.applyState({ cards: [queued], agents: [], hours: 24 });
+    ok('★ Codex: a held message does not make its own idle terminal look busy forever', api.wfBusy(queued) === false);
+  } catch (e) { ok(`Codex held readiness — ${e.message}`, false); }
+  try {
+    const page = runPage(), sent = [];
+    const p = { kind: 'codex', started: true, gone: false };
+    page.setFn('panelPty', () => p);
+    page.setFn('ptyFixKind', () => {});
+    page.setFn('ptyWhenReady', (q, go) => go(q));
+    page.setFn('ptyAsking', () => false);
+    page.setFn('ptyInputBox', () => null);
+    page.setFn('ptyTypeEnter', (q, text) => sent.push({ type: 'paste', text }));
+    page.setFn('wfPost', (m) => sent.push({ type: 'queue', ...m }));
+    const c = { agent: 'codex', id: 'codex-held' }, h = { key: 'one', text: 'read this', attachments: ['/tmp/image.png'] };
+    const started = page.wfTypeCodexHeld(c, h);
+    page.wfTypeCodexHeld(c, h);
+    const claimedFirst = sent.length === 1 && sent[0].claimTyped === true && !sent.some(x => x.type === 'paste');
+    page.kanban.ack({ op: 'queue', claimTyped: true, key: 'one', token: 'claim-one' });
+    const first = sent[1];
+    const timer = page.timers.find(x => x.ms === 1500);
+    if (timer) timer.f();
+    page.wfTypeCodexHeld(c, { key: 'two', text: 'read this\n\n添付ファイル(このパスを読んでください):\n- /tmp/image.png', attachments: ['/tmp/image.png'] });
+    page.kanban.ack({ op: 'queue', claimTyped: true, key: 'two', token: 'claim-two' });
+    ok('★ Codex held: durable claim precedes one paste with attachment and confirmed queue', started && claimedFirst && first.type === 'paste'
+      && first.text.includes('read this') && first.text.includes('/tmp/image.png') && sent[2].confirmTyped === true && sent[2].token === 'claim-one'
+      && sent[4].text.match(/image\.png/g).length === 1 && !sent.some(x => x.cancel));
+    const blocked = runPage(), blockedSent = [];
+    blocked.setFn('panelPty', () => p);
+    blocked.setFn('ptyFixKind', () => {});
+    blocked.setFn('ptyWhenReady', (q, go) => go(q));
+    blocked.setFn('ptyAsking', () => true);
+    blocked.setFn('ptyInputBox', () => null);
+    blocked.setFn('wfPost', m => blockedSent.push(m));
+    blocked.wfTypeCodexHeld(c, { key: 'blocked', text: 'wait' });
+    blocked.kanban.ack({ op: 'queue', claimTyped: true, key: 'blocked', token: 'claim-blocked' });
+    ok('★ Codex held: a question in the terminal releases the claim without pasting', blockedSent[0].claimTyped === true
+      && blockedSent[1].releaseTyped === true && blockedSent[1].token === 'claim-blocked' && blockedSent.length === 2);
+  } catch (e) { ok(`Codex held terminal — ${e.message}`, false); }
   // A `claude --resume <id>` pasted into a terminal while the session is
   // still alive forks a second process (see dispatch.js/alive.js) — the
   // exact incident this guards against, measured 2026-09-23. So the raw
