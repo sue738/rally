@@ -29,7 +29,8 @@ process.env.RALLY_SCAN_CACHE = path.join(tmp, 'scan-cache.json');
 const STORES = {};
 for (const [k, f] of [['QUEUE', 'queue.json'], ['DONE', 'done.json'], ['WIP', 'wip.json'], ['LABELS', 'labels.json'],
   ['TITLES', 'titles.json'], ['INDEX', 'index.json'], ['LAST_CACHE', 'last-cache.json'], ['ATTACHMENTS', 'attachments'],
-  ['RUNS', 'runs'], ['WIP_OUT', 'wip-out'], ['IMG', 'img'], ['MODEL_ALIASES', 'model-aliases.json']]) process.env[`RALLY_${k}`] = STORES[k] = path.join(tmp, f);
+  ['RUNS', 'runs'], ['WIP_OUT', 'wip-out'], ['IMG', 'img'], ['MODEL_ALIASES', 'model-aliases.json'],
+  ['RATE_RESUME', 'rate-resume.json']]) process.env[`RALLY_${k}`] = STORES[k] = path.join(tmp, f);
 // A test that points a store somewhere else puts it back here, never
 // `delete`s it: deleting fell through to ~/.rally, and the drains the
 // later server tests trigger rewrote the real queue.json.
@@ -1773,6 +1774,87 @@ console.log('== limits: the allowance left ==');
     if (was === undefined) delete process.env.RALLY_LIMITS; else process.env.RALLY_LIMITS = was;
     fs.rmSync(root, { recursive: true, force: true });
   }
+}
+
+console.log('== rate resume: only a stopped five-hour rejection resumes once ==');
+{
+  const RR = require('../lib/rateResume.js'), Q = require('../lib/queue.js');
+  const dir = fs.mkdtempSync(path.join(tmp, 'rate-resume-'));
+  const id = '11111111-1111-1111-1111-111111111111';
+  const t = Date.now() - 120000, reset = Date.now() + 3600000;
+  const log = path.join(dir, 'claude.jsonl');
+  const event = (at, extra) => JSON.stringify({ timestamp: new Date(at).toISOString(), ...extra });
+  const rejected = event(t, { type: 'assistant', isApiErrorMessage: true, error: 'rate_limit',
+    quotaLimits: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: reset / 1000 } });
+  const session = { agent: 'claude', id, file: log, project: dir };
+  const card = { agent: 'claude', id, column: 'needs-you' };
+  const limits = require('../lib/limits.js');
+  const oldCodex = limits.codex;
+  try {
+    fs.writeFileSync(log, rejected + '\n');
+    ok('rate resume: a confirmed five-hour rejection supplies its reset', RR.detect(session).reset === reset);
+    fs.writeFileSync(log, rejected + '\n' + event(t + 1000, { type: 'assistant', message: { content: [] } }) + '\n');
+    ok('rate resume: native continuation cancels the old rejection', RR.detect(session) === null);
+    fs.writeFileSync(log, rejected + '\n');
+    RR.sync([card], [session], new Map()); RR.sync([card], [session], new Map());
+    let items = Q.read().filter((x) => x.autoResume && x.id === id);
+    ok('rate resume: one future queue item survives repeated refreshes and does not send early',
+      items.length === 1 && items[0].retryAt === reset + RR.GRACE_MS && Q.drain(new Map(), { resume: () => { throw Error('early'); } }).sent.length === 0);
+    fs.appendFileSync(log, event(t + 2000, { type: 'user', message: { content: [] } }) + '\n');
+    RR.sync([card], [session], new Map());
+    ok('rate resume: a manual continuation cancels the scheduled send', !Q.read().some((x) => x.autoResume && x.id === id));
+    fs.writeFileSync(log, rejected + '\n');
+    const idleId = '33333333-3333-3333-3333-333333333333';
+    const idleSession = { ...session, id: idleId };
+    const idleCard = { ...card, id: idleId, alive: true, aliveKind: 'background', aliveStatus: 'idle' };
+    RR.sync([idleCard], [idleSession], new Map([[idleId, { kind: 'background', status: 'idle' }]]));
+    ok('rate resume: an idle Claude background session can be scheduled for a safe stop and resume',
+      Q.read().some((x) => x.autoResume && x.id === idleId && !x.whenFree));
+    RR.sync([{ ...idleCard, column: 'done' }], [idleSession], new Map());
+    ok('rate resume: marking a session done cancels its pending continuation',
+      !Q.read().some((x) => x.autoResume && x.id === idleId));
+    const historicId = '55555555-5555-5555-5555-555555555555';
+    const historicLog = path.join(dir, 'historic.jsonl');
+    fs.writeFileSync(historicLog, event(Date.now() - 3 * 3600000, { type: 'assistant', isApiErrorMessage: true,
+      error: 'rate_limit', quotaLimits: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: (Date.now() - 3600000) / 1000 } }) + '\n');
+    RR.sync([{ ...card, id: historicId }], [{ ...session, id: historicId, file: historicLog }], new Map());
+    ok('rate resume: installing Rally does not restart an old task after its reset',
+      !Q.read().some((x) => x.autoResume && x.id === historicId));
+    const manualId = '44444444-4444-4444-4444-444444444444';
+    RR.sync([{ ...card, id: manualId }], [{ ...session, id: manualId }], new Map());
+    Q.add({ agent: 'claude', id: manualId, text: 'new instruction' });
+    RR.sync([{ ...card, id: manualId }], [{ ...session, id: manualId }], new Map());
+    ok('rate resume: a new manual message stays separate and cancels the automatic one',
+      Q.read().filter((x) => x.id === manualId).length === 1 && Q.read().find((x) => x.id === manualId).text === 'new instruction');
+    Q.remove({ agent: 'claude', id: manualId });
+    const cid = '22222222-2222-2222-2222-222222222222';
+    const codexLog = path.join(dir, 'codex.jsonl');
+    fs.writeFileSync(codexLog, event(t, { type: 'event_msg', payload: { type: 'task_complete', error: { codex_error_info: 'usage_limit_exceeded' } } }) + '\n');
+    const codexSession = { agent: 'codex', id: cid, file: codexLog, project: dir };
+    const fresh = { at: t, fiveHour: { used: 100, resetsAt: reset }, week: { used: 20, resetsAt: reset + 86400000 } };
+    ok('rate resume: Codex needs a recent five-hour snapshot and remaining weekly allowance',
+      RR.detect(codexSession, fresh).reset === reset && RR.detect(codexSession, { ...fresh, week: { used: 100 } }) === null
+      && RR.detect(codexSession, { ...fresh, at: t - 11 * 60000 }) === null);
+    limits.codex = () => fresh;
+    RR.sync([{ agent: 'codex', id: cid, column: 'needs-you' }], [codexSession], new Map());
+    items = Q.read().filter((x) => x.autoResume && x.id === cid);
+    ok('rate resume: Codex is scheduled without touching another session', items.length === 1 && items[0].whenFree && items[0].ours);
+    const before = { agent: 'codex', id: cid, column: 'needs-you' };
+    Q.apply([before]);
+    ok('rate resume: the panel cannot type a scheduled continuation before reset', before.rateResumeAt === reset + RR.GRACE_MS && !before.held.length);
+    limits.codex = () => null; // after reset, the newest allowance record may describe the new window
+    RR.sync([{ agent: 'codex', id: cid, column: 'needs-you' }], [codexSession], new Map());
+    ok('rate resume: a newer Codex allowance snapshot does not cancel the pending continuation',
+      Q.read().some((x) => x.autoResume && x.id === cid));
+    Q.withLock(() => { const all = Q.read(); all.find((x) => x.id === cid).retryAt = Date.now() - 1; Q.write(all); });
+    const due = { agent: 'codex', id: cid, column: 'needs-you' };
+    Q.apply([due]);
+    ok('rate resume: the panel sees the continuation after reset', due.held.length === 1);
+    let sent = 0;
+    Q.drain(new Map(), { codexTuiOpen: () => false, resume: () => { sent++; return { sent: true }; } });
+    RR.sync([{ agent: 'codex', id: cid, column: 'needs-you' }], [codexSession], new Map());
+    ok('rate resume: the due item is sent once and never recreated', sent === 1 && !Q.read().some((x) => x.autoResume && x.id === cid));
+  } finally { limits.codex = oldCodex; }
 }
 
 console.log('== files: names under a project, for @ ==');

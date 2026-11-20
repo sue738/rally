@@ -71,6 +71,14 @@ it and keeps printing as before (the header's **Show Claude allowance** button s
 
 Codex's allowance needs nothing: it is in Codex's own session logs.
 
+When a personal Claude Code or Codex session stops with an explicit five-hour
+usage-limit error, Rally schedules one continuation in that same session after
+the recorded reset time. Rally must be running to deliver it (closing its window
+is fine). A manual or native continuation cancels the scheduled message. Codex
+also needs a recent allowance record showing that its five-hour window, rather
+than its weekly window, ran out. If the reset time or window cannot be confirmed,
+Rally leaves the session for you to resume yourself.
+
 ## The lanes
 
 | lane | what is in it |
