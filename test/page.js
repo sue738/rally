@@ -959,6 +959,18 @@ console.log('== every button is also a command ==');
     const h = api.mdRender('置き場所：https://claude.ai/artifact/B9gJ （元のHTMLは `~/Desktop/x/a.html`。');
     ok('★ links: a URL straight after 「：」 is a link, and a ~/ path (in a code span too) opens in the viewer',
       /：<a class="ext" href="https:\/\/claude\.ai\/artifact\/B9gJ"/.test(h) && /class="fpath"[^>]*data-p="~\/Desktop\/x\/a\.html"/.test(h));
+    const text='置き場所: https://claude.ai/artifact/B9gJ（元は ~/work/notes/improvements.html。URL: https://example.com/a,b?x=1, 次へ） https://example.org/x。';
+    for(const rendered of [api.mdRender(text),api.linkify(text)]){
+      ok('★ links: Japanese brackets and sentence punctuation stay outside URL and file links',
+        rendered.includes('href="https://claude.ai/artifact/B9gJ"')
+        && !rendered.includes('href="https://claude.ai/artifact/B9gJ（')
+        && rendered.includes('data-p="~/work/notes/improvements.html"')
+        && !rendered.includes('data-p="~/work/notes/improvements.html。')
+        && rendered.includes('href="https://example.com/a,b?x=1"')
+        && rendered.includes('</a>, 次へ）')
+        && rendered.includes('href="https://example.org/x"')
+        && rendered.includes('</a>。'));
+    }
   } catch (e) { ok(`links — ${e.message}`, false); }
   try {
     ok('★ 送信: every send says in the app log which way it went, a background send is checked against the record after 2 minutes like a typed one, and a message still missing is logged',
