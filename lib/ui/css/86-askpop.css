@@ -14,7 +14,17 @@
 .askpop .apm{color:var(--dim);font-size:var(--fs-meta)}
 .askpop .apq{margin-top:8px;font-size:var(--fs-small);color:var(--fg);font-weight:600}
 .askpop .apb{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.askpop .apch{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* every choice is read whole: a long rule wraps instead of being cut */
+.askpop .apch,.askpop .apdl{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere;border-radius:12px;line-height:1.4;padding-top:5px;padding-bottom:5px}
+/* a question: the panel's form (askQHtml), all questions and options, in the card's own frame */
+.askpop .askbox{margin:6px 0 0;padding:0;border:0;background:none;gap:6px 8px}
+.askpop .askq>b,.askpop .askq>b+.dim,.askpop .askq>.dim:last-child{display:none}
+.askpop .askq .aq:first-of-type{border-top:0;padding-top:2px}
+.askpop .askq .aopts .aopt{max-width:100%;overflow:visible;white-space:normal;text-align:left;overflow-wrap:anywhere;border-radius:12px;line-height:1.4;padding-top:5px;padding-bottom:5px}
+.askpop .askq .aorow{flex-direction:column;align-items:flex-start;gap:2px}
+.askpop .askq .aorow .aopt{max-width:100%}
+.askpop .askq .aorow .adesc{padding-left:4px}
+.askpop .askq .aother{width:100%;max-width:none}
 .askpop .apyes{background:var(--info);border-color:var(--info);color:var(--bg);font-weight:600}
 .askpop .apyes:hover{background:color-mix(in srgb,var(--info) 85%,var(--fg))}
 .askpop .apn{color:var(--dim);font-size:var(--fs-meta)}

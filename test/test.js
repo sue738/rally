@@ -4866,6 +4866,7 @@ process.stdout.write(String(bad));\n`);
             const big = 'x\n'.repeat(4000);
             ok('★ perm: an 8k-character Edit is held whole (not partial), a padded command still is cut', !Perm.whatRecord('Edit', { file_path: '/a', old_string: big, new_string: big }).partial
               && Perm.whatRecord('Bash', { command: 'ls' + ' '.repeat(5000) }).partial === true);
+            ok('★ perm: a plan of several thousand characters is held whole too, so the corner card can answer it', !Perm.whatRecord('ExitPlanMode', { plan: '## Plan\n' + '- step\n'.repeat(1500) }).partial);
             const st = fs.readFileSync(path.join(__dirname, '..', 'lib', 'ui', 'js', '42-state.js'), 'utf8');
             ok('★ perm: the banner offers 許可 only for a request held whole, by its raw length (not whitespace-collapsed)',
               /!c\.permAsk\.partial&&String\(c\.permAsk\.what\|\|''\)\.length<=120/.test(st) && !/permAsk\.what\|\|''\)\.replace\(\/\\s\+\/g,' '\)\.length<=120/.test(st)
