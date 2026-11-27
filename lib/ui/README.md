@@ -42,6 +42,7 @@ The files are split by feature, but they are not modules:
 | `18-compose.js` | the message box: skills picker, auto-grow, sent history, @file completion, drop on the panel |
 | `21-reply.js` | echo of a send, replying to one message, the thinking indicator and spinner |
 | `22-whenfree.js` | 今の作業後に送る: the send row's chip and ⌥⏎, held messages at the foot of the thread (今すぐ送る / 取り消す), typing them into the app's own terminal once idle |
+| `23-later.js` | あとで送る: the send row's menu (10分後 … 2時間後, or a time of day), the next send held in the queue with its time (`sendAt`), going then as an ordinary message |
 | `24-newsession.js` | `openNew`: the new-session panel |
 | `27-side-panels.js` | the 残作業 page (`pendCounts`, 棚卸し one or a capped batch), 定期実行 (jobs: next run, run now / pause / resume / delete), the header panel buttons |
 | `30-panel-host.js` | closing the detail panel, Escape, `focusHome`, `pendLine` |
@@ -79,6 +80,7 @@ The files are split by feature, but they are not modules:
 | `25-phone.css` | the narrow-window `@media` block, card kinds |
 | `30-prompt.css` | message boxes, completion menu, limits |
 | `32-whenfree.css` | 今の作業後に送る: held messages in the thread |
+| `33-later.css` | あとで送る: the send row's menu, and the time on a held one |
 | `35-palette.css` | the ⌘K palette |
 | `40-header.css` | the header status line |
 | `45-viewer.css` | the viewer and review comments |

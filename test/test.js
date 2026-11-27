@@ -3865,6 +3865,84 @@ console.log('== board server ==');
         }
       }
       {
+        // あとで送る: held until its time (sendAt), then an ordinary message — handed over even mid-turn.
+        // It never holds back or merges with another message, and one whose time passed while the app was closed still goes.
+        const Q = require('../lib/queue.js');
+        const A = require('../lib/alive.js'), D = require('../lib/dispatch.js'), R = require('../lib/relay.js');
+        const S1 = '5e551011-0000-4000-8000-0000000000d1', S2 = '5e551011-0000-4000-8000-0000000000d2';
+        process.env.RALLY_QUEUE = path.join(tmp, 'queue-later.json');
+        Q.write([]);
+        const real = { sessions: A.sessions, dispatch: D.dispatch, outcome: D.outcome, stop: D.stopBackground, relay: R.relay, result: R.result };
+        const calls = [];
+        let alive = new Map();
+        R.result = () => ({ sent: true });
+        A.sessions = () => alive;
+        D.dispatch = (x) => { calls.push({ how: 'resume', id: x.session, text: x.text }); return { pid: 1, log: path.join(tmp, 'no-log') }; };
+        D.outcome = () => null;
+        D.stopBackground = () => true;
+        R.relay = (x) => { calls.push({ how: 'relay', id: x.sessionId, text: x.text }); return { pid: 2, log: '' }; };
+        const bgBusy = { kind: 'background', status: 'busy', short: 'l1', shorts: ['l1'], name: 'later-one' };
+        const bgIdle = { ...bgBusy, status: 'idle' };
+        const drainOpts = { stopAndConfirm: () => true, handOver: (i, a) => Board.handOver({ agent: i.agent, id: i.id, text: i.text, files: [], a, alive, dir: i.dir }) };
+        try {
+          const at = Date.now() + 30 * 60000;
+          alive = new Map([[S1, bgIdle]]);
+          const r1 = Board.sendTo({ agent: 'claude', id: S1, text: '30分後に', dir: tmp, sendAt: at });
+          ok('★ あとで送る: held with its time (why scheduled), nothing dispatched even to an idle session',
+            r1.ok && r1.queued && r1.why === 'scheduled' && r1.sendAt === at && r1.key && calls.length === 0
+            && Q.read().length === 1 && Q.read()[0].sendAt === at && !Q.read()[0].whenFree);
+          const r2 = Board.sendTo({ agent: 'claude', id: S1, text: 'いますぐ', dir: tmp });
+          ok('★ あとで送る: an ordinary send to the same session is not held behind it, nor merged into it',
+            r2.delivered && calls.length === 1 && calls[0].text === 'いますぐ' && Q.read().length === 1 && Q.read()[0].text === '30分後に');
+          const r3 = Board.sendTo({ agent: 'claude', id: S1, text: '手が空いたら', dir: tmp, whenFree: true });
+          ok('… nor is 今の作業後に送る to an idle session', !r3.queued && calls.length === 2 && Q.read().length === 1);
+          const r4 = Board.sendTo({ agent: 'claude', id: S1, text: 'もうひとつ', dir: tmp, sendAt: at + 60000 });
+          ok('two scheduled for one session stay two', r4.why === 'scheduled' && Q.read().length === 2 && Q.read().every((i) => i.sendAt));
+          ok('a time already past is refused (nothing held)',
+            !!Board.sendTo({ agent: 'claude', id: S1, text: 'おそい', dir: tmp, sendAt: Date.now() - 1000 }).error && Q.read().length === 2);
+          ok('Antigravity: refused, never run at once',
+            !!Board.sendTo({ agent: 'antigravity', id: 'a1b2c3d4-0000-4000-8000-000000000001', text: 'x', dir: tmp, sendAt: at }).error);
+          calls.length = 0;
+          ok('★ drain: nothing goes before its time', Q.drain(alive, drainOpts).sent.length === 0 && calls.length === 0 && Q.read().length === 2);
+          // the card: each in the thread with its time; not in the 送信待ち note; Working, saying when
+          const cards = [{ agent: 'claude', id: S1, column: 'needs-you' }];
+          Q.apply(cards); Q.laneOf(cards);
+          ok('★ the card lists each with its time and leaves the 送信待ち note empty',
+            cards[0].held.length === 2 && cards[0].held[0].sendAt === at && cards[0].held[0].key && cards[0].queuedPlain === '' && cards[0].sendAt === at);
+          const hm = `${String(new Date(at).getHours()).padStart(2, '0')}:${String(new Date(at).getMinutes()).padStart(2, '0')}`;
+          ok('… in Working, saying the time it goes', cards[0].column === 'working' && cards[0].reason.includes(hm));
+          // 送信待ち's 取り消す (plain) leaves them; one taken back by its key goes
+          Q.remove({ agent: 'claude', id: S1, plain: true });
+          ok('送信待ち\'s 取り消す does not take a scheduled one', Q.read().length === 2);
+          Q.remove({ agent: 'claude', id: S1, key: Q.read()[1].key });
+          ok('取り消す on one takes only that one', Q.read().length === 1 && Q.read()[0].text === '30分後に');
+          // restart, then its time comes while the session is at work: handed over mid-turn (that is the choice), not held
+          Q.withLock(() => { const it = Q.read(); it[0].sendAt = Date.now() - 3 * 3600000; Q.write(it); });
+          delete require.cache[require.resolve('../lib/queue.js')];
+          const Q2 = require('../lib/queue.js');
+          alive = new Map([[S1, bgBusy]]);
+          Q2.drain(alive, drainOpts);
+          ok('★ あとで送る: once its time has come (hours ago, the app closed) it goes, handed over to a session at work',
+            calls.length === 1 && calls[0].how === 'relay' && calls[0].text === '30分後に');
+          Q2.drain(alive, drainOpts);
+          ok('… once', calls.length === 1 && Q2.read().length === 0);
+          // not running at its time: continued, as an ordinary held message is
+          Board.sendTo({ agent: 'claude', id: S2, text: '止まっている', dir: tmp, sendAt: Date.now() + 60000 });
+          Q2.withLock(() => { const it = Q2.read(); it[0].sendAt = Date.now() - 1; Q2.write(it); });
+          alive = new Map();
+          Q2.drain(alive, drainOpts);
+          ok('★ あとで送る: a session not running at its time is continued with it', calls.length === 2 && calls[1].how === 'resume' && calls[1].text === '止まっている' && Q2.read().length === 0);
+          // an ordinary held one is never folded into one scheduled later (that would hold it until then)
+          Q2.write([{ key: 'f2', agent: 'claude', id: S2, text: 'あと', at: 2, sendAt: Date.now() + 3600000 }]);
+          ok('Queue.add never merges a plain one into a scheduled one',
+            !Q2.add({ agent: 'claude', id: S2, text: 'ふつう', dir: tmp }).merged && Q2.read().length === 2 && Q2.read().find((i) => i.key === 'f2').text === 'あと');
+        } finally {
+          A.sessions = real.sessions; D.dispatch = real.dispatch; D.outcome = real.outcome; D.stopBackground = real.stop; R.relay = real.relay; R.result = real.result;
+          Q.write([]);
+          scratchStore('QUEUE');
+        }
+      }
+      {
         // What became of a send: a relay's answer, each held message's outcome
         // on its own, and the paths a send and a held message share.
         const Q = require('../lib/queue.js');

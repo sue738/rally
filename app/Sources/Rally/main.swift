@@ -1459,6 +1459,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             // 今の作業後に送る: held while the session is at work, delivered when it is idle (lib/queue.js)
             if type == "reply", (body["whenFree"] as? Bool) == true { args.append("--when-free") }
             if type == "reply", (body["ours"] as? Bool) == true { args.append("--ours") }
+            // あとで送る: the time (ms since 1970) it goes; held in the queue until then
+            if type == "reply", let at = body["sendAt"] as? Double, at > 0 { args += ["--send-at", String(Int64(at))] }
             // codex cannot resume without the session's directory
             if type == "reply", let d = body["dir"] as? String, !d.isEmpty { args += ["--cwd", d] }
             let closeOnDone = (body["closeOnDone"] as? Bool) == true

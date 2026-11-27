@@ -72,6 +72,7 @@ function parseArgs(argv) {
     else if (a === '--no-open') o.noOpen = true;
     else if (a === '--type') o.typeInto = true;
     else if (a === '--when-free') o.whenFree = true;
+    else if (a === '--send-at') o.sendAt = +argv[++i];
     else if (a === '--ours') o.ours = true;
     else if (a === '--key') o.key = argv[++i];
     else if (a === '--now') o.now = true;
@@ -603,7 +604,7 @@ async function main() {
     try {
       const files = (o.attach || []).filter(Boolean);
       const r = o.command === 'reply'
-        ? Board.sendTo({ agent: o.agentName, id: o.session, text: o.text, model: o.model, effort: o.effort, attachments: files, dir: o.dirArg, type: !!o.typeInto, whenFree: !!o.whenFree, ours: !!o.ours })
+        ? Board.sendTo({ agent: o.agentName, id: o.session, text: o.text, model: o.model, effort: o.effort, attachments: files, dir: o.dirArg, type: !!o.typeInto, whenFree: !!o.whenFree, ours: !!o.ours, ...(o.sendAt ? { sendAt: o.sendAt } : {}) })
         : (() => { const Attach = require('../lib/attach.js');
             const keep = files.map(Attach.inside).filter(Boolean);
             return Dispatch.dispatch({ agent: o.agentName, text: String(o.text || '') + Attach.lines(keep), model: o.model, effort: o.effort, chrome: !!o.chrome, mode: o.mode || undefined, worktree: !!o.worktree, dir: o.dirArg, addDirs: keep.length ? [path.resolve(Attach.dir())] : undefined,
@@ -617,7 +618,7 @@ async function main() {
       // --fork: the fork remembers where it was cut from (its transcript does not)
       if (named && o.fork) require('../lib/forks.js').set(named, o.fork);
       return process.stdout.write(Text.json({ ok: true, pid: r.pid, log: r.log, argv: r.argv,
-        ...(r.queued ? { queued: true, why: r.why, ...(r.to ? { to: r.to } : {}) } : {}), ...(r.woke ? { woke: true } : {}),
+        ...(r.queued ? { queued: true, why: r.why, ...(r.to ? { to: r.to } : {}), ...(r.sendAt ? { sendAt: r.sendAt, key: r.key } : {}) } : {}), ...(r.woke ? { woke: true } : {}),
         ...(r.relayed ? { relayed: true, to: r.to, ...(r.pending ? { pending: true } : {}) } : {}), ...(r.typed ? { typed: true, to: r.to } : {}),
         ...(named ? { session: named } : {}), ...(started && started.short ? { short: started.short, agent: o.agentName } : {}) }));
     } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }

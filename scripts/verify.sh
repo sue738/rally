@@ -38,7 +38,7 @@ css_scenarios() {
   case "$(basename "$1")" in
     10-terminal.css|80-panel-term.css)                      echo "term split close termui termcmd panelterm layout";;
     91-controls.css|90-late.css|40-header.css|55-widths.css|00-base.css|25-phone.css) echo "controls layout panelstat onerow uismall";;
-    30-prompt.css|32-whenfree.css)                          echo "whenfree drafts controls";;
+    30-prompt.css|32-whenfree.css|33-later.css)             echo "whenfree drafts controls";;
     15-panel.css|50-misc.css|20-history.css|45-viewer.css)  echo "panelstat onerow detail controls";;
     60-newsession.css)                                      echo "new yaynew agynew";;
     70-list.css|05-board.css)                               echo "listdock layout view";;
@@ -56,7 +56,7 @@ js_scenarios() {
     13-bangrun.js)                                          echo "bangrun bang bangwait detail";;
     21-reply.js)                                            echo "reply bangwait bangrun send detail";;
     15-attach.js|16-camera.js)                              echo "attach attwait camera detail new";;
-    22-whenfree.js)                                         echo "whenfree drafts";;
+    22-whenfree.js|23-later.js)                             echo "whenfree drafts send";;
     24-newsession.js)                                       echo "new yaynew agynew";;
     39-board.js|00-core.js|42-state.js|48-bridge.js)        echo "view detail covered listdock kbd";;
     43-askpop.js)                                            echo "askpop askwire askq";;

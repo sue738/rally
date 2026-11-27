@@ -293,6 +293,9 @@ skips = skips_of(r)
 if sc == "persist":
     try: skips += ["phase 1: " + x for x in skips_of(json.load(open(os.path.join(os.path.dirname(p), "phase1", "report.json"))))]
     except Exception: pass
+# later (あとで送る): held with their times and taken back before they are due; the fake claude never gets either
+if sc == "later" and os.path.exists(argv):
+    if "selftest later" in open(argv).read(): ok = False; notes.append("a scheduled message was sent before its time")
 allow_skip = os.environ.get("SELFTEST_ALLOW_SKIP") == "1"
 if skips:
     notes.append("SKIPPED: " + " / ".join(skips) + ("" if allow_skip else " (a failure; SELFTEST_ALLOW_SKIP=1 passes it)"))

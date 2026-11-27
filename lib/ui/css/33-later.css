@@ -1,0 +1,9 @@
+/* あとで送る (23-later.js): the send row's menu; held ones in the thread are 32-whenfree.css's, with their time */
+.modemenu.latermenu{min-width:200px}
+.latermenu .laterhm{display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--line);margin-top:2px}
+.latermenu .laterinput{font:inherit;font-size:var(--fs-small);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 6px;color-scheme:dark}
+body.light .latermenu .laterinput{color-scheme:light}
+.latermenu .laterinput:focus{outline:none;border-color:color-mix(in srgb,var(--info) 70%,var(--line))}
+.latermenu .laterhm .laterset{display:inline-flex;flex-direction:row;padding:3px 8px;border:1px solid var(--line);border-radius:6px;white-space:nowrap}
+.hist .turn.held.later .who .peer.wf.later{color:var(--warn)}
+.hist .turn.user.held.later{border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
