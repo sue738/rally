@@ -7,9 +7,9 @@
 cask "rally" do
   arch arm: "arm64", intel: "x86_64"
 
-  version "0.0.13"
-  sha256 arm:   "efb1cf62903d576b22e93ccf29449f541ca42ec4e061a100626059d3228d0312",
-         intel: "52b6e51cac7965d3cd9f5d6ed504d4307d533294c40bb7d5c73ef9f232b9c299"
+  version "0.0.14"
+  sha256 arm:   "d45540cb51cc7e78f5bb0a58335aec15005b9fb1939709871f2cc3f795d12917",
+         intel: "e717d7af3da2e0b8026bb276db610b647066960cc55ed8071e91bda4f7df120a"
 
   url "https://github.com/sue738/rally/releases/download/v#{version}/Rally-#{version}-#{arch}.dmg"
   name "Rally"
