@@ -64,7 +64,7 @@ const sampler=_si.call(window,()=>sample(),15000);
 const tail=(p,n)=>{if(!p||p.xtGone)return '';const b=p.xt.buffer.active;let t='';for(let i=Math.max(0,b.length-(n||40));i<b.length;i++)t+=b.getLine(i).translateToString(true)+'\n';return t};
 const drawn=p=>/\S/.test(tail(p,200));
 const act=async(name,f)=>{S.act[name]=(S.act[name]||0)+1;try{return await f()}catch(e){S.actErr.push({t:Math.round((Date.now()-T0)/1000),name,e:String(e&&e.message||e).slice(0,200)});return null}};
-const pick=a=>a[Math.floor(Math.random()*a.length)];
+const pick=a=>a[crypto.getRandomValues(new Uint32Array(1))[0]%a.length];
 const shells=()=>[...ptys.values()].filter(p=>p.kind==='shell'&&!p.gone&&!p.closing&&!p.host);
 const openShell=async()=>{const before=new Set(ptys.keys());ptyOpen('shell',{label:'soak',cwd:''});
   await wait(()=>[...ptys.values()].some(x=>!before.has(x.id)&&!x.gone&&drawn(x)),12000).catch(()=>0);
