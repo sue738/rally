@@ -83,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     lazy var pty = PtyHost(send: { [weak self] js in self?.call(js) }, log: { [weak self] l in self?.logLine(l) })
     // Main-thread bookkeeping: one state run in flight plus one waiting, one history read per session.
     var stateRunning = false
+    var lastStateHours = 24                                   // the page's range, for a refresh the app asks for itself
     var statePending: (hours: Int, enrich: Bool, watch: Bool)?
     var historyInFlight = Set<String>()
     var reloadsSinceFinish = 0
@@ -846,6 +847,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             worker?.stop()                        // the next state starts a worker with the new RALLY_LANG
         case "state":
             let hours = max(1, min(720, (body["hours"] as? Int) ?? 24))
+            lastStateHours = hours
             requestState(hours: hours, enrich: (body["enrich"] as? Bool) == true, watch: (body["watch"] as? Bool) == true)
         case "history":
             let hours = max(1, min(720, (body["hours"] as? Int) ?? 24))
@@ -1460,7 +1462,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             if type == "reply", (body["whenFree"] as? Bool) == true { args.append("--when-free") }
             if type == "reply", (body["ours"] as? Bool) == true { args.append("--ours") }
             // あとで送る: the time (ms since 1970) it goes; held in the queue until then
-            if type == "reply", let at = body["sendAt"] as? Double, at > 0 { args += ["--send-at", String(Int64(at))] }
+            if type == "reply", let at = body["sendAt"] as? Double, at > 0 { args += ["--send-at", String(Int64(at))]; refreshAt(at / 1000) }
             // codex cannot resume without the session's directory
             if type == "reply", let d = body["dir"] as? String, !d.isEmpty { args += ["--cwd", d] }
             let closeOnDone = (body["closeOnDone"] as? Bool) == true
@@ -1491,6 +1493,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     static func isInside(_ f: URL, _ root: URL) -> Bool {
         let a = canonical(f), r = canonical(root)
         return a.hasPrefix(r.hasSuffix("/") ? r : r + "/")
+    }
+
+    /// あとで送る: a refresh at `epoch` (seconds since 1970), and one a little later. The queue's drain runs on each
+    /// refresh, and the page's own timers are slowed while its window is hidden (WebKit), so the app asks itself.
+    func refreshAt(_ epoch: TimeInterval) {
+        let wait = max(0, epoch - Date().timeIntervalSince1970)
+        for extra in [2.0, 20.0] {
+            DispatchQueue.main.asyncAfter(wallDeadline: .now() + wait + extra) { [weak self] in
+                guard let self = self else { return }
+                self.requestState(hours: self.lastStateHours, enrich: false)
+            }
+        }
     }
 
     /// One state run at a time and at most one waiting: many things ask, and queued runs would pile up.
