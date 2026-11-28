@@ -615,12 +615,7 @@ async function main() {
               ...(o.fork ? { session: Dispatch.recordId('claude', o.fork), fork: true, model: undefined } : {}) }); })();
       // a start the CLI refused is not a start (sendTo reads its own reply's log)
       // codex 聞く starts an app server first and says when the turn is under way: waited for, or a refusal would read as started
-      if (o.command === 'run') { const got = Dispatch.outcome(r.log, r.ask ? 20000 : o.agentName === 'codex' ? 1200 : 6000, r.pid, { bg: !!r.bg }); if (got && got.refused) r.error = tr('{agent} が起動しませんでした: {why}', { agent: o.agentName, why: Dispatch.reason(o.agentName, got) }); if (got && got.conversation) r.conversation = got.conversation; }
-      // codex and agy do not say that they started: one that is already over with an error did not (lib/dispatch.js ended)
-      if (o.command === 'run' && !r.error && !r.bg && !r.conversation && r.exit) {
-        const end = await Dispatch.ended(r);
-        if (end && (end.code || end.signal)) r.error = tr('{agent} がエラーで終了しました(終了コード {code}): {why}', { agent: o.agentName, code: end.signal || end.code, why: Dispatch.reason(o.agentName, { refused: Dispatch.complaint(r.log), unlisted: true }) });
-      }
+      if (o.command === 'run') { const got = Dispatch.outcome(r.log, r.ask ? 20000 : o.agentName === 'codex' ? 1200 : 6000, r.pid, { bg: !!r.bg }); if (got && got.refused) r.error = got.exit ? tr('{agent} がエラーで終了しました(終了コード {code}): {why}', { agent: o.agentName, code: got.exit.signal ? `signal ${got.exit.signal}` : got.exit.code, why: Dispatch.reason(o.agentName, got) }) : tr('{agent} が起動しませんでした: {why}', { agent: o.agentName, why: Dispatch.reason(o.agentName, got) }); if (got && got.conversation) r.conversation = got.conversation; }
       // exit 0: the app passes a JSON answer through only then, and the page needs saved / attach
       if (r.error) return process.stdout.write(Text.json({ error: r.error, ...(r.typeable ? { typeable: true } : {}), ...(r.saved ? { saved: true, attach: String(o.session || '').slice(0, 8) } : {}), ...(r.queued ? { queued: true, why: r.why } : {}), log: r.log }));
       const started = o.command === 'run' ? await nameStartedSession(r, o) : null;

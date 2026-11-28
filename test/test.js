@@ -5311,7 +5311,7 @@ exec sleep 30
       const cp = require('child_process');
       const D = require('../lib/dispatch.js'), Attach = require('../lib/attach.js'), Clicheck = require('../lib/clicheck.js'), CA = require('../lib/codexask.js'), Q = require('../lib/queue.js'), Al = require('../lib/alive.js'), Term = require('../lib/term.js');
       const d = fs.mkdtempSync(path.join(tmp, 'starts-'));
-      const ENV = ['RALLY_BIN_CLAUDE', 'RALLY_BIN_CODEX', 'RALLY_OUTCOME_MS', 'RALLY_RUNS', 'RALLY_ATTACHMENTS', 'RALLY_CLICHECK', 'RALLY_CLICHECK_FILE', 'RALLY_CODEX_ASKED', 'RALLY_QUEUE', 'RALLY_HOME', 'RALLY_QUEUE_BACKOFF'];
+      const ENV = ['RALLY_BIN_CLAUDE', 'RALLY_BIN_CODEX', 'RALLY_OUTCOME_MS', 'RALLY_RUNS', 'RALLY_ATTACHMENTS', 'RALLY_CLICHECK', 'RALLY_CLICHECK_FILE', 'RALLY_CODEX_ASKED', 'RALLY_QUEUE', 'RALLY_HOME', 'RALLY_QUEUE_BACKOFF', 'RALLY_BIN_ANTIGRAVITY'];
       const keep = Object.fromEntries(ENV.map((k) => [k, process.env[k]]));
       const orig = { dispatch: D.dispatch, outcome: D.outcome, sessions: Al.sessions };
       const spawned = [];
@@ -5354,10 +5354,28 @@ exec sleep 30
         const cxOk = sh('codex-ok', ['echo "OpenAI Codex v9.9"', 'exit 0']);
         const cxLong = sh('codex-long', ['echo "OpenAI Codex v9.9"', 'sleep 60']);
         const cxFlag = sh('codex-flag', ['echo "error: unexpected argument \'--skip-git-repo-check\' found" >&2', 'echo >&2', 'echo "Usage: codex exec [OPTIONS] [PROMPT]" >&2', 'exit 2']);
-        const end = async (bin, ms) => { process.env.RALLY_BIN_CODEX = bin; const r = D.dispatch({ agent: 'codex', text: 'x', dir: proj }); spawned.push(r.pid); D.outcome(r.log, ms, r.pid, {}); return { r, e: await D.ended(r) }; };
-        const eb = await end(cxBad, 1200), eg = await end(cxOk, 1200), el = await end(cxLong, 300);
-        ok('★ start: how a start ended is known after the wait — 2 for one that failed, 0 for one that ran, nothing for one still running; its complaint is its error line',
-          !!eb.e && eb.e.code === 2 && D.complaint(eb.r.log) === 'ERROR: unsupported config' && !!eg.e && eg.e.code === 0 && el.e === null);
+        const cxMute = sh('codex-mute', ['exit 3']), cxKilled = sh('codex-killed', ['kill -TERM $$']);
+        const end = (bin, ms) => { process.env.RALLY_BIN_CODEX = bin; const r = D.dispatch({ agent: 'codex', text: 'x', dir: proj }); spawned.push(r.pid); return D.outcome(r.log, ms, r.pid, {}); };
+        const eb = end(cxBad, 1200), eg = end(cxOk, 1200), el = end(cxLong, 300), em = end(cxMute, 1200), ek = end(cxKilled, 1200);
+        ok('★ start: codex that is already over with a status other than 0 did not take the message — its error line is the reason and its code is known while we wait; 0 is a run, and one still going is not judged',
+          !!eb && eb.refused === 'ERROR: unsupported config' && eb.unlisted === true && eb.exit.code === 2 && eg === null && el === null
+          && !!em && em.exit.code === 3 && em.refused === '終了コード 3 で終了しました' && !!ek && ek.exit.signal === 15);
+        const dead3 = bg('/bin/sh', ['-c', 'exit 3']); D.sleepMs(200);
+        ok('★ start: how a child ended is read from ps while nobody has collected it (the code in the high byte); nothing for a living one, or one that is not ours',
+          JSON.stringify(D.endedHow(dead3)) === JSON.stringify({ code: 3, signal: 0 }) && D.endedHow(living) === null && D.endedHow(99999999) === null && D.endedHow(0) === null);
+        // a send codex did not take: the same, through resume() — it read as 送信済み, and a held one was dropped as sent
+        const TR = '0199aaaa-bbbb-7ccc-8ddd-eeeeeeee00aa';
+        process.env.RALLY_CODEX_ASKED = path.join(d, 'asked-none');
+        process.env.RALLY_BIN_CODEX = cxBad; const rs1 = D.resume({ agent: 'codex', id: TR, text: 'again', dir: proj });
+        process.env.RALLY_BIN_CODEX = cxOk; const rs2 = D.resume({ agent: 'codex', id: TR, text: 'again', dir: proj });
+        ok('★ send: a message codex did not take (over at once with an error, in words the board does not know) is a refusal with its line, not sent (control: exit 0 is sent)',
+          !rs1.sent && rs1.refused === 'ERROR: unsupported config' && rs1.exit.code === 2 && rs2.sent === true);
+        const agyNo = sh('agy-no', ['echo "not logged in and no controlling terminal"', 'exit 1']);
+        const agyRun = sh('agy-run', ['echo \'{"event":"init","conversation_id":"0199aaaa-bbbb-7ccc-8ddd-eeeeeeee00bb"}\'', 'exit 1']);
+        process.env.RALLY_BIN_ANTIGRAVITY = agyNo; const g1r = D.dispatch({ agent: 'antigravity', text: 'x', dir: proj }); const g1 = D.outcome(g1r.log, 3000, g1r.pid);
+        process.env.RALLY_BIN_ANTIGRAVITY = agyRun; const g2r = D.dispatch({ agent: 'antigravity', text: 'x', dir: proj }); const g2 = D.outcome(g2r.log, 3000, g2r.pid);
+        ok('★ start: agy that ended with an error before naming its conversation is a refusal in its own words; once it has named one, the run is under way whatever follows',
+          !!g1 && g1.refused === 'not logged in and no controlling terminal' && g1.exit.code === 1 && !!g2 && g2.conversation === '0199aaaa-bbbb-7ccc-8ddd-eeeeeeee00bb');
         // 4. attachments of a new session
         process.env.RALLY_ATTACHMENTS = path.join(d, 'attachments');
         const att = Attach.save({ name: 'shot.png', data: Buffer.from('png') }).path;
@@ -5395,8 +5413,8 @@ exec sleep 30
         process.env.RALLY_BIN_CLAUDE = cTrust;
         const old = D.dispatch({ agent: 'claude', text: 'x', dir: proj, addDirs: [Attach.dir()] });
         const oldNow = D.outcome(old.log, 3000, old.pid, { bg: true }), oldThen = D.outcome(old.log, 300, old.pid);
-        ok('★ start with a file: it starts — the copy\'s path in the message, no --add-dir (control: the stand-in refuses the attachment folder as 2.1.332 does, and that used to read as started)',
-          a1.ok === true && !/--add-dir/.test(sent1) && sent1.includes('- ' + copy) && !!oldNow && /^Added folder not trusted/.test(oldNow.refused) && oldThen === null);
+        ok('★ start with a file: it starts — the copy\'s path in the message, no --add-dir (control: the stand-in refuses the attachment folder as 2.1.332 does — by `backgrounded` missing, and by its exit code alone)',
+          a1.ok === true && !/--add-dir/.test(sent1) && sent1.includes('- ' + copy) && !!oldNow && /^Added folder not trusted/.test(oldNow.refused) && !!oldThen && oldThen.exit.code === 1);
         const a2 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: cNew });
         const a3 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: cMute });
         ok('★ start: a refusal in words nobody has seen, or in none, is an error with the CLI\'s own line — not ▶ 起動しました — and is known within seconds' + ` (${a2.ms}ms, ${a3.ms}ms)`,
