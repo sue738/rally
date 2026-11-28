@@ -43,6 +43,8 @@ process.env.RALLY_BIN_CLAUDE = path.join(tmp, 'no-such-claude');
 // a send watches the run log for the CLI's answer for up to 6 s; the stand-ins here answer at once
 // or never, so the watch is cut short (lib/dispatch.js outcome) — one that answers late still fits
 process.env.RALLY_OUTCOME_MS = '1500';
+// the installed CLIs are not run for their --help (lib/clicheck.js): its tests name a stand-in
+process.env.RALLY_CLICHECK = '0';
 const mk = (o) => JSON.stringify(o);
 // fetch() sets Host itself; a request with someone else's Host needs node:http
 const getWithHost = (u, host, headers = {}) => new Promise((resolve, reject) => {
@@ -4249,7 +4251,8 @@ console.log('== board server ==');
       // dispatch through the server, against a fake agent binary that records its argv
       const fakeBin = path.join(tmp, 'fake-claude');
       const argLog = path.join(tmp, 'argv.log');
-      fs.writeFileSync(fakeBin, `#!/bin/sh\nif [ "$1" = "agents" ]; then echo '[]'; exit 0; fi\nprintf '%s\\n' "$@" > "${argLog}"\npwd >> "${argLog}"\n`, { mode: 0o755 });
+      // it says `backgrounded` as the CLI does once it has taken the message: a `claude --bg` that ends without it is read as a refusal
+      fs.writeFileSync(fakeBin, `#!/bin/sh\nif [ "$1" = "agents" ]; then echo '[]'; exit 0; fi\nprintf '%s\\n' "$@" > "${argLog}"\npwd >> "${argLog}"\necho 'backgrounded · 1a2b3c4d'\n`, { mode: 0o755 });
       process.env.RALLY_BIN_CLAUDE = fakeBin;
       process.env.RALLY_RUNS = path.join(tmp, 'runs');
       const run = await (await fetch(url + 'api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ agent: 'claude', text: 'do the thing', dir: tmp }) })).json();
@@ -4406,7 +4409,7 @@ console.log('== board server ==');
         fs.mkdirSync(qdir, { recursive: true });
         const sends = path.join(qdir, 'sends.log');
         const qbin = path.join(qdir, 'fake-claude');
-        fs.writeFileSync(qbin, `#!/bin/sh\necho "$*" >> "${sends}"\n`, { mode: 0o755 });
+        fs.writeFileSync(qbin, `#!/bin/sh\necho "$*" >> "${sends}"\necho 'backgrounded · 1a2b3c4d'\n`, { mode: 0o755 });
         const worker = path.join(qdir, 'worker.js');
         fs.writeFileSync(worker, `const Q = require(${JSON.stringify(path.join(__dirname, '..', 'lib', 'queue.js'))});
 const [mode, id, at] = process.argv.slice(2);
@@ -5260,7 +5263,7 @@ exec sleep 30
         const fake = path.join(d, 'codex'), flog = path.join(d, 'fake.jsonl'), proj = path.join(d, 'proj');
         fs.mkdirSync(proj);
         fs.writeFileSync(fake, `#!${process.execPath}\n(${fakeCodexAppServer.toString()})();\n`, { mode: 0o755 });
-        process.env.RALLY_BIN_CODEX = fake; process.env.RALLY_CODEX_ASKED = path.join(d, 'asked.json');
+        process.env.RALLY_BIN_CODEX = fake; process.env.RALLY_CODEX_ASKED = path.join(d, 'asked');
         process.env.FAKE_CODEX_LOG = flog; process.env.FAKE_CODEX_TID = TID; process.env.RALLY_OUTCOME_MS = '15000';
         const until = (f, ms = 15000) => { const end = Date.now() + ms; for (;;) { let v; try { v = f(); } catch (e) { v = null; } if (v || Date.now() > end) return v; Dispatch.sleepMs(50); } };
         const seen = () => { try { return fs.readFileSync(flog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch (e) { return []; } };
@@ -5300,6 +5303,220 @@ exec sleep 30
         if (pb === undefined) delete process.env.RALLY_BIN_CODEX; else process.env.RALLY_BIN_CODEX = pb;
         process.env.RALLY_OUTCOME_MS = '1500';
         for (const k of ['FAKE_CODEX_LOG', 'FAKE_CODEX_TID', 'FAKE_CODEX_BUSY']) delete process.env[k];
+      }
+    }
+    // ---- a start or a send the CLI did not take is said, whatever words the CLI uses (found 2026-11-28: for nine
+    // days every start with a file failed on a check a new claude had added, and each one read as started)
+    {
+      const cp = require('child_process');
+      const D = require('../lib/dispatch.js'), Attach = require('../lib/attach.js'), Clicheck = require('../lib/clicheck.js'), CA = require('../lib/codexask.js'), Q = require('../lib/queue.js'), Al = require('../lib/alive.js'), Term = require('../lib/term.js');
+      const d = fs.mkdtempSync(path.join(tmp, 'starts-'));
+      const ENV = ['RALLY_BIN_CLAUDE', 'RALLY_BIN_CODEX', 'RALLY_OUTCOME_MS', 'RALLY_RUNS', 'RALLY_ATTACHMENTS', 'RALLY_CLICHECK', 'RALLY_CLICHECK_FILE', 'RALLY_CODEX_ASKED', 'RALLY_QUEUE', 'RALLY_HOME', 'RALLY_QUEUE_BACKOFF'];
+      const keep = Object.fromEntries(ENV.map((k) => [k, process.env[k]]));
+      const orig = { dispatch: D.dispatch, outcome: D.outcome, sessions: Al.sessions };
+      const spawned = [];
+      const bg = (cmd, args) => { const c = cp.spawn(cmd, args, { stdio: 'ignore', detached: true }); c.unref(); spawned.push(c.pid); return c.pid; };
+      const sh = (name, lines) => { const f = path.join(d, name); fs.writeFileSync(f, ['#!/bin/sh', ...lines, ''].join('\n'), { mode: 0o755 }); return f; };
+      try {
+        process.env.RALLY_HOME = path.join(d, 'home'); fs.mkdirSync(process.env.RALLY_HOME);
+        process.env.RALLY_RUNS = path.join(d, 'runs');
+        process.env.RALLY_OUTCOME_MS = '3000';
+        // 1. the process is gone: a child of this very process stays a zombie while we wait synchronously, and kill(pid, 0) finds it
+        const dead = bg('/bin/sh', ['-c', 'exit 3']), living = bg('/bin/sleep', ['60']);
+        D.sleepMs(300);
+        let kill0 = true; try { process.kill(dead, 0); } catch (e) { kill0 = false; }
+        ok('★ start: a child that has ended counts as gone while we wait synchronously (kill(pid, 0) alone still finds the zombie); a living one does not',
+          kill0 === true && D.exited(dead) === true && D.exited(living) === false && D.exited(99999999) === true && D.exited(0) === false);
+        // 2. claude --bg: ended without `backgrounded` = refused
+        let n = 0;
+        const lg = (body) => { const f = path.join(d, 'l' + (n++) + '.log'); fs.writeFileSync(f, '# claude --bg -- hi\n' + body); return f; };
+        const gone = () => { const p = bg('/usr/bin/true', []); D.sleepMs(150); return p; };
+        const TRUST = 'Added folder not trusted: /Users/x/.rally/attachments. Leave out its --add-dir or, if you trust it and everything in its repository or below it, start `claude` there once and accept the trust prompt.';
+        const o1 = D.outcome(lg(TRUST + '\n'), 3000, gone(), { bg: true });
+        const t0 = Date.now(); const o2 = D.outcome(lg(''), 3000, gone(), { bg: true }); const took = Date.now() - t0;
+        const o3 = D.outcome(lg('A new way to say no. Your message is saved and will be delivered later.\n'), 3000, gone(), { bg: true });
+        const o4 = D.outcome(lg('Session 4e9a0344 is already running — `claude attach 4e9a0344` to open it.\n'), 3000, gone(), { bg: true });
+        const o5 = D.outcome(lg('backgrounded · 1a2b3c4d\n'), 3000, gone(), { bg: true });
+        const o6 = D.outcome(lg('starting…\n'), 400, living, { bg: true });
+        const o7 = D.outcome(lg('OpenAI Codex v0.1\n--------\nworkdir: /x\n'), 3000, gone(), {});
+        const o8 = D.outcome(lg(TRUST + '\n'), 3000, gone());
+        ok('★ start: claude --bg that ended without `backgrounded` refused, whatever it said — the line 2.1.332 added for an untrusted --add-dir, silence, a line never seen',
+          !!o1 && /^Added folder not trusted/.test(o1.refused) && o1.unlisted === true && !!o2 && o2.refused === '何も言わずに終了しました' && took < 2000
+          && !!o3 && o3.saved === true && !/Your message is saved/.test(o3.refused) && !!o4 && o4.busy === true);
+        ok('★ start: `backgrounded` is a start; a run still going is not judged; a run that is not claude --bg is not judged by its ending (control: read without bg, the trust line was a start)',
+          o5 === null && o6 === null && o7 === null && o8 === null);
+        const o9 = D.outcome(lg("error: unexpected argument '--skip-git-repo-check' found\n\nUsage: codex exec [OPTIONS] [PROMPT]\n"), 600, gone());
+        ok('★ start: a flag the CLI no longer has (its parser says `error: …` in lower case) is a refusal for any agent, and not words the board knows',
+          !!o9 && /unexpected argument/.test(o9.refused) && D.reason('codex', o9) === o9.refused);
+        // 3. codex / agy do not say that they started: the exit code does
+        const proj = path.join(d, 'proj'); fs.mkdirSync(proj);
+        const cxBad = sh('codex-bad', ['echo "OpenAI Codex v9.9"', 'echo "ERROR: unsupported config"', 'exit 2']);
+        const cxOk = sh('codex-ok', ['echo "OpenAI Codex v9.9"', 'exit 0']);
+        const cxLong = sh('codex-long', ['echo "OpenAI Codex v9.9"', 'sleep 60']);
+        const cxFlag = sh('codex-flag', ['echo "error: unexpected argument \'--skip-git-repo-check\' found" >&2', 'echo >&2', 'echo "Usage: codex exec [OPTIONS] [PROMPT]" >&2', 'exit 2']);
+        const end = async (bin, ms) => { process.env.RALLY_BIN_CODEX = bin; const r = D.dispatch({ agent: 'codex', text: 'x', dir: proj }); spawned.push(r.pid); D.outcome(r.log, ms, r.pid, {}); return { r, e: await D.ended(r) }; };
+        const eb = await end(cxBad, 1200), eg = await end(cxOk, 1200), el = await end(cxLong, 300);
+        ok('★ start: how a start ended is known after the wait — 2 for one that failed, 0 for one that ran, nothing for one still running; its complaint is its error line',
+          !!eb.e && eb.e.code === 2 && D.complaint(eb.r.log) === 'ERROR: unsupported config' && !!eg.e && eg.e.code === 0 && el.e === null);
+        // 4. attachments of a new session
+        process.env.RALLY_ATTACHMENTS = path.join(d, 'attachments');
+        const att = Attach.save({ name: 'shot.png', data: Buffer.from('png') }).path;
+        const copy = path.join(proj, '.rally', path.basename(att));
+        const f1 = Attach.forStart({ agent: 'claude', cwd: proj, files: [att] });
+        ok('★ attach: a new claude session gets a copy in the folder it starts in and no --add-dir (2.1.332 refuses the attachment folder)',
+          f1.addDirs === undefined && f1.lines.includes('- ' + copy) && !f1.lines.includes(Attach.dir()) && fs.readFileSync(copy, 'utf8') === 'png'
+          && fs.readFileSync(path.join(proj, '.rally', '.gitignore'), 'utf8') === '*\n');
+        const linked = path.join(d, 'linked'); fs.mkdirSync(linked); fs.symlinkSync(d, path.join(linked, '.rally'));
+        const f2 = Attach.forStart({ agent: 'claude', cwd: proj, files: [att], worktree: true });
+        const f3 = Attach.forStart({ agent: 'claude', cwd: path.join(d, 'nowhere'), files: [att] });
+        const f4 = Attach.forStart({ agent: 'claude', cwd: linked, files: [att] });
+        const f5 = Attach.forStart({ agent: 'codex', cwd: path.join(d, 'nowhere'), files: [att] });
+        const f6 = Attach.forStart({ agent: 'antigravity', cwd: proj, files: [att] });
+        const f7 = Attach.forStart({ agent: 'claude', cwd: proj, files: [] }), f8 = Attach.forStart({ agent: 'claude', cwd: proj, files: ['/etc/hosts'] });
+        ok('★ attach: with --worktree the copies\' folder is added (it is inside the project); nowhere to copy to is an error for claude, never a start without the file',
+          JSON.stringify(f2.addDirs) === JSON.stringify([path.join(proj, '.rally')]) && /作業フォルダが要ります/.test(f3.error || '') && /コピーできなかった/.test(f4.error || '') && !f3.lines && !f4.lines);
+        ok('★ attach: codex is handed the paths as they are when there is no folder, agy its folder as before; nothing attached (or a file from elsewhere) adds nothing',
+          !f5.error && f5.lines.includes('- ' + att) && f5.addDirs === undefined && JSON.stringify(f6.addDirs) === JSON.stringify([path.resolve(Attach.dir())]) && f6.lines.includes('- ' + att)
+          && f7.lines === '' && f7.addDirs === undefined && f8.lines === '' && f8.addDirs === undefined);
+        ok('★ attach: a message that already lists its files is known (not listed a second time)', Attach.listed('x' + Attach.lines(['/a'])) === true && Attach.listed('x') === false && Attach.lines([]) === '');
+        // 5. the whole `rally run`, against stand-ins
+        const rally = path.join(__dirname, '..', 'bin', 'rally.js');
+        const cli = (args, env = {}) => { const s = Date.now(); const r = cp.spawnSync(process.execPath, [rally, ...args], { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 60000 });
+          let j; try { j = JSON.parse(r.stdout); } catch (e) { j = { unparsed: String(r.stdout) + String(r.stderr) }; } return { ...j, ms: Date.now() - s }; };
+        const argv = path.join(d, 'argv.txt');
+        // as claude 2.1.332 does: an --add-dir of the attachment folder is refused on stderr, exit 1
+        const cTrust = sh('claude-2.1.332', ['if [ "$1" = "agents" ]; then echo "[]"; exit 0; fi', `printf '%s\\n' "$@" > "${argv}"`, 'prev=""', 'for a in "$@"; do',
+          '  if [ "$prev" = "--add-dir" ]; then case "$a" in */attachments) echo "Added folder not trusted: $a. Leave out its --add-dir or, if you trust it, start claude there once and accept the trust prompt." >&2; exit 1;; esac; fi',
+          '  prev="$a"', 'done', 'echo "backgrounded · 1a2b3c4d"']);
+        const cNew = sh('claude-new-no', ['if [ "$1" = "agents" ]; then echo "[]"; exit 0; fi', 'echo "A refusal nobody has seen yet." >&2', 'exit 1']);
+        const cMute = sh('claude-mute', ['if [ "$1" = "agents" ]; then echo "[]"; exit 0; fi', 'exit 1']);
+        const a1 = cli(['run', '--as', 'claude', '--text', 'look at this', '--cwd', proj, '--attach', att], { RALLY_BIN_CLAUDE: cTrust });
+        const sent1 = fs.readFileSync(argv, 'utf8');
+        process.env.RALLY_BIN_CLAUDE = cTrust;
+        const old = D.dispatch({ agent: 'claude', text: 'x', dir: proj, addDirs: [Attach.dir()] });
+        const oldNow = D.outcome(old.log, 3000, old.pid, { bg: true }), oldThen = D.outcome(old.log, 300, old.pid);
+        ok('★ start with a file: it starts — the copy\'s path in the message, no --add-dir (control: the stand-in refuses the attachment folder as 2.1.332 does, and that used to read as started)',
+          a1.ok === true && !/--add-dir/.test(sent1) && sent1.includes('- ' + copy) && !!oldNow && /^Added folder not trusted/.test(oldNow.refused) && oldThen === null);
+        const a2 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: cNew });
+        const a3 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: cMute });
+        ok('★ start: a refusal in words nobody has seen, or in none, is an error with the CLI\'s own line — not ▶ 起動しました — and is known within seconds' + ` (${a2.ms}ms, ${a3.ms}ms)`,
+          !a2.ok && a2.error === 'claude が起動しませんでした: A refusal nobody has seen yet.' && !a3.ok && /claude が起動しませんでした: 何も言わずに終了しました/.test(a3.error || '') && a2.ms < 5000 && a3.ms < 5000);
+        const c1 = cli(['run', '--as', 'codex', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CODEX: cxBad });
+        const c2 = cli(['run', '--as', 'codex', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CODEX: cxFlag });
+        const c3 = cli(['run', '--as', 'codex', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CODEX: cxOk });
+        ok('★ start: codex that is already over with an error did not start — its exit code and its error line are said; a flag it no longer has is said in its parser\'s words (control: exit 0 is a start)',
+          !c1.ok && c1.error === 'codex がエラーで終了しました(終了コード 2): ERROR: unsupported config' && !c2.ok && /^codex が起動しませんでした: error: unexpected argument/.test(c2.error || '') && c3.ok === true);
+        const cSlow = sh('claude-slow', ['if [ "$1" = "agents" ]; then echo "[]"; exit 0; fi', 'sleep 40']);
+        const cNoId = sh('claude-noid', ['if [ "$1" = "agents" ]; then echo "[]"; exit 0; fi', 'echo "backgrounded"']);
+        const u1 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: cSlow, RALLY_OUTCOME_MS: '800' });
+        if (u1.pid) spawned.push(u1.pid);
+        const u2 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: cNoId, RALLY_OUTCOME_MS: '800' });
+        ok('★ start: claude that has not yet said `backgrounded` is answered as asked-but-unconfirmed, not as started (control: one that said it — even without an id, or with one — is not)',
+          u1.ok === true && u1.unconfirmed === true && !u1.session && u2.ok === true && u2.unconfirmed === undefined && a1.ok === true && a1.unconfirmed === undefined);
+        fs.rmSync(argv, { force: true });
+        const s1 = cli(['reply', '--as', 'claude', '--session', '5e551011-0000-4000-8000-0000000000a1', '--text', 'later', '--send-at', 'soon'], { RALLY_BIN_CLAUDE: cTrust });
+        const s2 = cli(['run', '--as', 'claude', '--text', 'later', '--cwd', proj, '--send-at', '0'], { RALLY_BIN_CLAUDE: cTrust });
+        ok('★ --send-at with a time that is no time is an error, not a message sent at once', /送る時刻/.test(s1.error || '') && /送る時刻/.test(s2.error || '') && !fs.existsSync(argv));
+        // 6. the CLI changed under the board (lib/clicheck.js)
+        process.env.RALLY_CLICHECK_FILE = path.join(d, 'cli-check.json');
+        const helpOf = (flags) => ['Usage: claude [options] [command] [prompt]', '', 'Options:', ...flags.map((f) => `  ${f} <value>   something`), '  -h, --help   display help'].join('\n');
+        const all = Clicheck.flagsOf('claude'), cxAll = Clicheck.flagsOf('codex');
+        const fakeCli = (name, ver, flags) => sh(name, [`if [ "$1" = "--version" ]; then echo "${ver} (Claude Code)"; exit 0; fi`, `if [ "$1" = "--help" ]; then cat <<'HELP'`, helpOf(flags), 'HELP', 'exit 0; fi',
+          'if [ "$1" = "agents" ]; then echo "[]"; exit 0; fi', 'echo "error: unknown option" >&2', 'exit 1']);
+        const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'dispatch.js'), 'utf8');
+        const body = src.slice(src.indexOf('function buildCommand('), src.indexOf('\n}\n', src.indexOf('function buildCommand(')));
+        const literal = [...new Set([...body.matchAll(/'(--?[A-Za-z][\w-]*)'/g)].map((m) => m[1]))].filter((f) => !['--output-format', '--conversation'].includes(f));
+        const modeFlags = Object.values(D.AGENT_MODES.codex).flat().filter((f) => /^-/.test(f));
+        ok('★ clicheck: the flags looked for are the ones buildCommand writes — every flag literal in it (agy\'s own aside) and every codex mode flag is among them' + ` (${literal.length} literals)`,
+          literal.length >= 12 && literal.every((f) => all.includes(f) || cxAll.includes(f)) && modeFlags.every((f) => cxAll.includes(f))
+          && ['--bg', '--resume', '--fork-session', '--add-dir', '-p'].every((f) => all.includes(f)) && !all.some((f) => !/^-/.test(f)));
+        ok('★ clicheck: a flag is documented as a whole word (--model is not found in --model-list, nor -p in -print)',
+          Clicheck.documents('  --model <m>  x', '--model') && !Clicheck.documents('  --model-list  x', '--model') && Clicheck.documents('  -p, --print  x', '-p') && !Clicheck.documents('  -print  x', '-p') && Clicheck.documents('  --effort=<level>', '--effort'));
+        const v1 = fakeCli('claude-v1', '2.1.332', all), v2 = fakeCli('claude-v2', '2.2.0', all.filter((f) => f !== '--bg' && f !== '--fork-session'));
+        const k1 = Clicheck.check('claude', { bin: v1 });
+        const k2 = Clicheck.check('claude', { bin: v2, now: 1000 });
+        ok('★ clicheck: a CLI whose --help has every flag is fine; one that lost flags is named with them and with the version it had before',
+          !!k1 && k1.checked && k1.version === '2.1.332' && k1.missing.length === 0 && !!k2 && k2.version === '2.2.0' && k2.missing.join(' ') === '--bg --fork-session' && k2.was === '2.1.332' && k2.since === 1000);
+        const st = Clicheck.forState(['claude', 'antigravity'], { bins: { claude: v2 } });
+        ok('★ clicheck: the board\'s state names the agent, its version and the flags; an agent it builds no commands for is not looked at',
+          JSON.stringify(st) === JSON.stringify({ claude: { version: '2.2.0', missing: ['--bg', '--fork-session'] } }) && Clicheck.check('antigravity', { bin: v1 }) === null);
+        const v3 = fakeCli('claude-v3', '2.3.0', all);
+        Clicheck.check('claude', { bin: v3, now: 5000 });
+        const wrap = sh('claude-wrapper', ['echo "starting the real one"', 'exit 0']);
+        ok('★ clicheck: an update is named with a failure in words the board does not know, for two weeks — not with one it knows, not after; a wrapper that prints no help is not judged',
+          /Claude Code は 2\.2\.0 から 2\.3\.0 に更新されています/.test(Clicheck.note('claude', { bin: v3, now: 6000, unexpected: true })) && Clicheck.note('claude', { bin: v3, now: 6000 }) === ''
+          && Clicheck.note('claude', { bin: v3, now: 5000 + Clicheck.RECENT_MS + 1, unexpected: true }) === '' && /--bg --fork-session がありません/.test(Clicheck.note('claude', { bin: v2 }))
+          && Clicheck.check('claude', { bin: wrap }).checked === false && Clicheck.note('claude', { bin: wrap, unexpected: true }) === '');
+        // off under tests and the self-test: a stand-in takes --help for a start
+        process.env.RALLY_BIN_CLAUDE = cTrust; fs.rmSync(argv, { force: true });
+        process.env.RALLY_CLICHECK = '0'; const offA = Clicheck.check('claude');
+        delete process.env.RALLY_CLICHECK; const offB = Clicheck.check('claude');
+        ok('★ clicheck: a binary the board was pointed at (RALLY_BIN_…) is never run for its --help unless asked to', offA === null && offB === null && Clicheck.off('claude') === true && !fs.existsSync(argv));
+        // the whole way: a start that fails on a CLI that lost a flag says so
+        const e1 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: v2, RALLY_CLICHECK: '1' });
+        const e2 = cli(['run', '--as', 'claude', '--text', 'hi', '--cwd', proj], { RALLY_BIN_CLAUDE: v1, RALLY_CLICHECK: '1', RALLY_CLICHECK_FILE: path.join(d, 'cli-check-2.json') });
+        ok('★ clicheck: a start the CLI turned down says which flags its --help no longer has (control: with all flags there, only the CLI\'s own line)',
+          /^claude が起動しませんでした: error: unknown option \(Claude Code 2\.2\.0 の --help に、Rally が渡す --bg --fork-session がありません。CLI の仕様が変わった可能性があります\)$/.test(e1.error || '')
+          && e2.error === 'claude が起動しませんでした: error: unknown option');
+        process.env.RALLY_CLICHECK = '0';
+        // 7. 今の作業後に送る keeps its order behind one that waits to be tried again
+        {
+          const S = '5e551011-0000-4000-8000-0000000000b1', sentTexts = [];
+          process.env.RALLY_QUEUE = path.join(d, 'queue.json');
+          Al.sessions = () => new Map();
+          D.dispatch = (x) => { sentTexts.push(x.text); return { pid: 1, log: path.join(d, 'no-log') }; };
+          D.outcome = () => null;
+          const now = Date.now();
+          const item = (key, text, extra) => ({ key, agent: 'claude', id: S, text, whenFree: true, at: now - 5000, ...extra });
+          Q.write([item('a', 'A', { fails: 1, error: 'refused once', retryAt: now + 60000 }), item('b', 'B')]);
+          const d1 = Q.drain(new Map(), {});
+          const left1 = Q.read().map((i) => i.text).join();
+          Q.write([item('a', 'A', { fails: Q.MAX_FAILS, error: 'stopped' }), item('b', 'B')]);
+          const d2 = Q.drain(new Map(), {});
+          ok('★ 今の作業後に送る: one that waits to be tried again keeps the later ones behind it (they went ahead: B, A, C); one that has stopped for good does not hold them',
+            d1.sent.length === 0 && sentTexts.length === 1 && sentTexts[0] === 'B' && left1 === 'A,B' && d2.sent.length === 1);
+          Object.assign(D, { dispatch: orig.dispatch, outcome: orig.outcome }); Al.sessions = orig.sessions;
+        }
+        // 8. codex 聞く: whose turn is under way on a thread
+        {
+          const T = '0199aaaa-bbbb-7ccc-8ddd-eeeeeeee0001', T2 = '0199aaaa-bbbb-7ccc-8ddd-eeeeeeee0002';
+          process.env.RALLY_CODEX_ASKED = path.join(d, 'asked');
+          const runner = bg(process.execPath, ['-e', 'setTimeout(() => {}, 60000)', 'codexask.js']);
+          D.sleepMs(200);
+          CA.mark(T, runner); CA.mark(T2, process.pid);
+          const r1 = CA.running(T), rSelf = CA.running(T, runner), r2 = CA.running(T2);
+          let called = 0; D.dispatch = () => { called++; return { pid: 1, log: path.join(d, 'no-log') }; }; D.outcome = () => null;
+          const held = D.resume({ agent: 'codex', id: T, text: 'again', dir: proj });
+          CA.mark(T, 0);
+          const after = D.resume({ agent: 'codex', id: T, text: 'again', dir: proj });
+          ok('★ codex ask: the thread\'s own runner is found by its mark (a pid that is some other program by now is not one; nor is the run that asks), and each thread has its own file',
+            r1 === runner && rSelf === 0 && r2 === 0 && CA.known(T) && CA.known(T2) && !CA.known('0199aaaa-bbbb-7ccc-8ddd-eeeeeeee0003')
+            && fs.readdirSync(CA.askedDir()).sort().join() === [T + '.json', T2 + '.json'].join());
+          ok('★ codex ask: a message for a thread whose turn is still under way is held without starting another runner (each start was turned away by the app server); once it has ended, it goes',
+            !!held && held.busy === true && /別の codex/.test(held.refused) && held.log === null && called === 1 && after.sent === true);
+          Object.assign(D, { dispatch: orig.dispatch, outcome: orig.outcome });
+        }
+        // 9. ここで始める / Ghostty で始める keeps what was chosen on the 新規セッション screen
+        {
+          let script = '';
+          const run = (cmd, args) => { script = args[1]; return ''; };
+          const t1 = Term.startInTerminal({ dir: proj, text: 'do it', model: 'opus', mode: 'plan', effort: 'high', chrome: true, worktree: true, attachments: [att, '/etc/hosts'] }, run);
+          const typed = fs.readFileSync(t1.file, 'utf8');
+          const t2 = Term.startInTerminal({ dir: proj, text: 'x', mode: 'bypassPermissions' }, run), t3 = Term.startInTerminal({ dir: proj, text: 'x', effort: 'lots' }, run);
+          ok('★ start in a terminal: the mode, the effort, Chrome and the attached files chosen on the screen go with it (they were dropped); a mode the board does not offer is refused',
+            t1.ok === true && /claude --model opus --effort high --permission-mode plan --chrome --worktree -- /.test(script) && typed === 'do it' + Attach.lines([att])
+            && t2.ok === false && t3.ok === false);
+        }
+        ok('★ app: Ghostty で始める hands the mode, the effort, Chrome and the attached files on to `rally startterm`, which hands them to the terminal start',
+          /case "startterm":[\s\S]{0,900}args \+= \["--mode", pm\][\s\S]{0,300}args \+= \["--effort", ef\][\s\S]{0,200}args\.append\("--chrome"\)[\s\S]{0,200}args \+= \["--attach", f\]/.test(appSwift())
+          && /startInTerminal\(\{[^}]*mode: o\.mode \|\| undefined, effort: o\.effort \|\| undefined, chrome: !!o\.chrome, attachments: \(o\.attach \|\| \[\]\)\.filter\(Boolean\) \}\)/.test(fs.readFileSync(rally, 'utf8')));
+        ok('★ app: the log line of a start or a send says how it came out (ok / failed / session) apart from the answer\'s first 300 characters, which a long message fills',
+          /"ev": "dispatch", "type": type, "waited_ms": waited, "ok": obj\["ok"\] != nil, "failed": obj\["error"\] != nil,\s*"session": /.test(appSwift()));
+      } catch (e) { ok('starts — ' + (e.stack || e.message), false); }
+      finally {
+        for (const k of ENV) { if (keep[k] === undefined) delete process.env[k]; else process.env[k] = keep[k]; }
+        Object.assign(D, { dispatch: orig.dispatch, outcome: orig.outcome }); Al.sessions = orig.sessions;
+        for (const pid of spawned) { try { process.kill(pid); } catch (e) { /* already gone */ } }
       }
     }
     // the page's own script, executed rather than parsed (test/page.js)

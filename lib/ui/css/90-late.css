@@ -37,6 +37,11 @@ button.mini.tolatest[hidden]{display:none}
 #notifybar[hidden]{display:none}
 #notifybar .nb-t{flex:1;min-width:0}
 #notifybar button{flex:none;min-height:22px}
+/* a CLI that no longer has a flag the board passes (lib/clicheck.js): the same bar */
+#clibar{display:flex;align-items:center;gap:10px;padding:6px 16px;font-size:var(--fs-small);background:color-mix(in srgb,var(--warn) 12%,var(--bg));border-bottom:1px solid color-mix(in srgb,var(--warn) 35%,var(--line));color:var(--fg)}
+#clibar[hidden]{display:none}
+#clibar .nb-t{flex:1;min-width:0}
+#clibar button{flex:none;min-height:22px}
 /* Two button sizes: standard (28px) and segment (24px). Pointer only: touch keeps the larger targets. */
 :root{--btn-h:28px;--btn-h-sm:24px}
 @media (hover:hover) and (min-width:761px){

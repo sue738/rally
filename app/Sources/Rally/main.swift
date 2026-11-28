@@ -1394,6 +1394,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             var args = ["startterm", "--as", "claude", "--cwd", (body["dir"] as? String) ?? "", "--text", (body["text"] as? String) ?? ""]
             if let m = body["model"] as? String, !m.isEmpty { args += ["--model", m] }
             if (body["worktree"] as? Bool) == true { args.append("--worktree") }
+            // what was chosen for the start that was refused goes with it (a 計画だけ session must not start as an ordinary one)
+            if let pm = body["mode"] as? String, ["plan", "acceptEdits", "auto"].contains(pm) { args += ["--mode", pm] }
+            if let ef = body["effort"] as? String, ["low", "medium", "high", "xhigh", "max"].contains(ef) { args += ["--effort", ef] }
+            if (body["chrome"] as? Bool) == true { args.append("--chrome") }
+            for f in (body["attachments"] as? [String]) ?? [] where !f.isEmpty { args += ["--attach", f] }
             if selftesting { notified.append(["key": "startterm", "title": (body["dir"] as? String) ?? "", "body": (body["text"] as? String) ?? ""]); return }
             actQueue.async { self.ack("startterm", self.runNode(args)) }
         case "attachterm":
@@ -1475,7 +1480,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
                 if let j = try? JSONSerialization.jsonObject(with: Data(out.utf8)) as? [String: Any] { obj = j }
                 else { obj = ["error": String(out.prefix(300))] }
                 if closeOnDone { obj["closeOnDone"] = true }
-                self.logLine(["ev": "dispatch", "type": type, "waited_ms": waited, "out": String(out.prefix(300))])
+                // what it came to, apart from `out`: a long message fills the 300 characters before the session id is reached
+                self.logLine(["ev": "dispatch", "type": type, "waited_ms": waited, "ok": obj["ok"] != nil, "failed": obj["error"] != nil,
+                              "session": (obj["session"] as? String) ?? (obj["short"] as? String) ?? "", "out": String(out.prefix(300))])
                 obj["token"] = token
                 if !card.isEmpty { obj["card"] = card }
                 if let data = try? JSONSerialization.data(withJSONObject: obj), let js = String(data: data, encoding: .utf8) {

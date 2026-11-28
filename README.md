@@ -128,7 +128,9 @@ a bill (`$?` when a model has no known rate; none for Codex).
   bypass is never offered; Codex also has **Ask**, which runs the turn under `codex app-server`
   so its approval prompts reach the board, and cannot be combined with a worktree). Claude and Codex can start in a fresh git worktree, and
   ×2 / ×3 run the same ask side by side in separate worktrees; Claude can also be
-  allowed to drive Chrome (`--chrome`). Files and pasted images can go with the message.
+  allowed to drive Chrome (`--chrome`). Files and pasted images can go with the message (a copy is
+  put in the session folder's own `.rally/`, where the agent can read it without asking).
+  A start the CLI turns down is shown as an error with the CLI's own words, not as started.
 - **Follow subagents.** Subagents are nested under their parent: running ones, then the
   finished ones as its results. Click one to read its conversation.
 - **Review what a session changed** (D): every file it wrote or edited, with git's diff.
@@ -168,8 +170,11 @@ on disk.
   opens (kept by the page as a cookie), so another account or a container reaching loopback cannot use it.
 - **Read:** the agents' transcripts (`~/.claude`, `~/.codex`, Gemini's and Cursor's
   stores), `claude agents --json`, and the rate limits Claude Code hands the status line (when set up above).
+  Once per installed version, `claude --help` and `codex exec --help` are read too: if a flag Rally passes is no
+  longer there, the board says so (and a start or send that fails right after an update names the update).
 - **Written:** Rally's own files under `~/.rally/` (backlog, queue, run logs,
   attachments, caches; the folder is yours only). An agent is only written to when you send, start or finish.
+  A file you attach is also copied into `.rally/` in the session's folder (it ignores itself in git).
   Board-run git commands turn off a repository's own filter and textconv drivers, so opening a card never runs them.
 - **Camera:** on only while the sheet **+camera** opens is up (macOS asks for the permission the first time). The one
   photo you take is saved under `~/.rally/attachments/`; nothing else is recorded.

@@ -91,7 +91,7 @@ function runPage(saved = {}) {
   };
   const names = Object.keys(scope);
   // `return` the page's own functions so they can be called from here.
-  const body = src + '\n;return {ptyInputBox, ptyInputHas, mdRender, bangCmd, bangMark, sentEchoes, echoRestore, yourOrderSet, effortDefault, yourSorted: () => yourSort(live.cards), laneLocalSet, live: () => live, dlgParse, dlgSeen, askHtml, ptyFixKind, toggleNew, syncPanelBtns, openFirstPanel: () => { openedFirst = false; openFirst(); }, histReconcile, thinkState, palItems, unreadReplies, unreadChip, seenBaseline, awayGroups, awayLine, fwdTargets, seenMapRef: () => seenMap, seenARef: () => seenA, echoTyped, unreadFromOf, isUnread, unreadShown, markSeen, unreadCount, unreadAllRead, seenBase: () => seenBase, histAsk, histPut, histCache, histTouch, clock, matchQuery, searchSuggest, flash, copyId, wfHeldOf, wfLocal, wfSend, wfBusy, wfTypeCodexHeld, wfClaimed, moreChips, etaLabel, etaChip, etaSettle, etaTaskChip, prHtml, hist: document.querySelector(\'#mhist\'), body: () => document.querySelector(\'#mbody\'), openDetail, openNew, openPendingAll, pendCounts, wipStart, jobsHtml, whenNext, renderHistory, applyState, render, reasonJa, applyTheme, pendLine, echoSent, sentEchoes, historyHtml, cardSig, thinkState, resumeCell, fuzzy, openPalette, closePalette, arrivals, stuckText, kidsPlan, mdRender, diffRender, diffLines, reviewMessage, openChanges, notesOf, sendNotes, noteHere, renderChangesFor: (j) => window.__kanban.changes(j), linkify, askHtml, qAnswers, qPick, permAnswer, modelVer, famVersions, autoHue, topicKey, parseQuery, matchQuery, flipDeltas, prArrived, prNumOf, qerrText, notifyBar, PAL_ACTIONS, clicks: document.clicks, prMergeable, prFinish, prFinished, prDone, wtHtml, wtNote, wtPost, pendAct, dispatch, pendingToasts, dispatched: (r) => window.__kanban.dispatched(r), newState: () => newRun, pendingNewOf: () => pendingNew, panel: () => panelKey, togglePanel, closeDetail, sel: () => sel, setSel: (k) => { sel = k; }, openFor: () => openFor, boardView: () => boardView, setView, VIEWS, cshow, setCardShow, CARD_FIELDS, CHIP_FIELDS, chipOrder, setCardOrder, orderedChips, cardShowOpen, ptys, ptyEnded, kanban: window.__kanban, sentEchoes, panelView: () => panelView, panelPrefSet, ptyUnpark, setFn: (n, f) => { eval(n + \' = f\'); }, bgNote, bgPopOpen, bgStopTasks, bgPopRefresh, win: window, mountPanelTerm, takeoverWhy, KM_DEFS, KM_GROUPS, KM_PRESETS, kmCanon, kmAct, kmBad, kmSet, kmReset, kmResetAll, kmPreset, kmPresetNow, kmLoad, kmParse, kmKey, kmL, kmLabel, kmText, kmOver: () => kmOver, SHORTCUTS, drawHelp, openKeys, keyDraw, kmCapKey, keyCap: () => keyCap, setKeyCap: (v) => { keyCap = v; }, openViewer, viewEdit, viewSave, viewEditable, viewerNow: () => viewer};';
+  const body = src + '\n;return {ptyInputBox, ptyInputHas, mdRender, bangCmd, bangMark, sentEchoes, echoRestore, yourOrderSet, effortDefault, yourSorted: () => yourSort(live.cards), laneLocalSet, live: () => live, dlgParse, dlgSeen, askHtml, ptyFixKind, toggleNew, syncPanelBtns, openFirstPanel: () => { openedFirst = false; openFirst(); }, histReconcile, thinkState, palItems, unreadReplies, unreadChip, seenBaseline, awayGroups, awayLine, fwdTargets, seenMapRef: () => seenMap, seenARef: () => seenA, echoTyped, unreadFromOf, isUnread, unreadShown, markSeen, unreadCount, unreadAllRead, seenBase: () => seenBase, histAsk, histPut, histCache, histTouch, clock, matchQuery, searchSuggest, flash, copyId, wfHeldOf, wfLocal, wfSend, wfBusy, wfTypeCodexHeld, wfClaimed, moreChips, etaLabel, etaChip, etaSettle, etaTaskChip, prHtml, hist: document.querySelector(\'#mhist\'), body: () => document.querySelector(\'#mbody\'), openDetail, openNew, openPendingAll, pendCounts, wipStart, jobsHtml, whenNext, renderHistory, applyState, render, reasonJa, applyTheme, pendLine, echoSent, sentEchoes, historyHtml, cardSig, thinkState, resumeCell, fuzzy, openPalette, closePalette, arrivals, stuckText, kidsPlan, mdRender, diffRender, diffLines, reviewMessage, openChanges, notesOf, sendNotes, noteHere, renderChangesFor: (j) => window.__kanban.changes(j), linkify, askHtml, qAnswers, qPick, permAnswer, modelVer, famVersions, autoHue, topicKey, parseQuery, matchQuery, flipDeltas, prArrived, prNumOf, qerrText, notifyBar, PAL_ACTIONS, clicks: document.clicks, prMergeable, prFinish, prFinished, prDone, wtHtml, wtNote, wtPost, pendAct, dispatch, pendingToasts, dispatched: (r) => window.__kanban.dispatched(r), startPaneCmd, newState: () => newRun, pendingNewOf: () => pendingNew, panel: () => panelKey, togglePanel, closeDetail, sel: () => sel, setSel: (k) => { sel = k; }, openFor: () => openFor, boardView: () => boardView, setView, VIEWS, cshow, setCardShow, CARD_FIELDS, CHIP_FIELDS, chipOrder, setCardOrder, orderedChips, cardShowOpen, ptys, ptyEnded, kanban: window.__kanban, sentEchoes, panelView: () => panelView, panelPrefSet, ptyUnpark, setFn: (n, f) => { eval(n + \' = f\'); }, bgNote, bgPopOpen, bgStopTasks, bgPopRefresh, win: window, mountPanelTerm, takeoverWhy, KM_DEFS, KM_GROUPS, KM_PRESETS, kmCanon, kmAct, kmBad, kmSet, kmReset, kmResetAll, kmPreset, kmPresetNow, kmLoad, kmParse, kmKey, kmL, kmLabel, kmText, kmOver: () => kmOver, SHORTCUTS, drawHelp, openKeys, keyDraw, kmCapKey, keyCap: () => keyCap, setKeyCap: (v) => { keyCap = v; }, openViewer, viewEdit, viewSave, viewEditable, viewerNow: () => viewer};';
   const fn = new Function(...names, body);
   // a key press as the board's own listeners get it, in the order they were added
   const key = (k) => {
@@ -1963,6 +1963,74 @@ try {
   const e2 = ev({ key: 'z' }); ks.kmCapKey(e2);
   ok('★ keymap settings: with the panel gone, a stale listening gives the keys back (not swallowed)', ks.keyCap() === '' && !e2.dp && ks.kmKey('nav.up') === 'x');
 } catch (e) { ok('keybindings — ' + e.stack.split('\n').slice(0, 3).join(' | '), false); }
+// ---- a CLI that changed under the board; starts not known to have started; 複製 that did not start (found 2026-11-28) ----
+console.log('== a changed CLI, unconfirmed starts, a 複製 that failed ==');
+try {
+  const page = runPage();
+  const $ = (q) => page.document.querySelector(q);
+  const base = { cards: [], agents: [], hours: 24, collisions: [], home: '/Users/me', trusted: ['/Users/me/work'] };
+  const bar = $('#clibar'), text = () => $('#clibar .nb-t').textContent;
+  page.applyState({ ...base });
+  const quiet = bar.hidden === true;
+  const lost = { claude: { version: '2.2.0', missing: ['--bg', '--fork-session'] } };
+  page.applyState({ ...base, cli: lost });
+  ok('★ cli: a CLI whose --help lost flags the board passes is said in a bar, with the agent, its version and the flags (nothing when all is well)',
+    quiet && bar.hidden === false && /claude 2\.2\.0 の --help に、Rally が渡す --bg --fork-session が見当たりません/.test(text()));
+  $('#clix').onclick();
+  const closed = bar.hidden === true;
+  page.applyState({ ...base, cli: lost });
+  const stays = bar.hidden === true;
+  page.applyState({ ...base, cli: { claude: { version: '2.3.0', missing: ['--bg'] } } });
+  ok('★ cli: closed, the bar stays closed for that version and comes back when the version or the flags differ', closed && stays && bar.hidden === false && /2\.3\.0/.test(text()));
+  page.applyState({ ...base, cli: {} });
+  ok('cli: the bar goes when the CLI has its flags again', bar.hidden === true);
+  // a start claude has not answered yet
+  const enter = () => $('#ntext').onkeydown({ key: 'Enter', shiftKey: false, isComposing: false, keyCode: 13, preventDefault() {} });
+  page.openNew(); $('#ndir').value = '/tmp/p'; $('#ntext').value = 'slow daemon'; enter();
+  page.dispatched({ token: [...page.pendingToasts.keys()].pop(), ok: true, unconfirmed: true, log: '/x/runs/c-claude.log' });
+  ok('★ new: a start claude has not yet answered is not called 起動しました — it says so, and what it means if no card comes',
+    page.newState().phase === 'noid' && /起動を頼みました/.test($('#nstate').innerHTML) && /まだ「始めた」という返事がありません/.test($('#nstate').innerHTML) && !/起動しました/.test($('#nstate').innerHTML));
+} catch (e) { ok('cli bar / unconfirmed — ' + e.stack.split('\n').slice(0, 3).join(' | '), false); }
+try {
+  // 複製: sent, the box is this session's again; refused, the words come back and so does 複製
+  const page = runPage();
+  const $ = (q) => page.document.querySelector(q);
+  const mb = page.body();
+  const box = $('#mbody .msg textarea'), fb = $('#mbody .forkbtn'), fw = $('#mbody .forkwt'), toastEl = Object.assign($('.toast'), { append() {} });
+  const q0 = mb.querySelector;
+  mb.querySelector = (s) => (s === '.msg textarea' ? box : s === '.toast' ? toastEl : s === '.forkbtn' ? fb : s === '.forkwt' ? fw : q0(s));
+  page.applyState({ cards: [card], agents: [], hours: 24, collisions: [], home: '/Users/me', trusted: ['/Users/me/proj'] });
+  page.openDetail(card);
+  const enter = () => box.onkeydown({ key: 'Enter', shiftKey: false, altKey: false, isComposing: false, keyCode: 13, preventDefault() {}, stopPropagation() {} });
+  const runs = () => page.fetched.filter((x) => x[0] === 'api/run').map((x) => JSON.parse(x[1].body));
+  const replies = () => page.fetched.filter((x) => x[0] === 'api/reply').length;
+  fb.onclick(); fw.onclick();
+  const ph0 = box.placeholder;
+  box.value = '複製して頼む'; enter();
+  const sent = runs().pop();
+  ok('★ 複製: the send starts a copy (fork: this session, in a worktree) and the box is this session\'s again — its words say so (they kept saying 元のセッションには送りません)',
+    /元のセッションには送りません/.test(ph0) && !!sent && sent.fork === card.id && sent.worktree === true && replies() === 0
+    && fb.classList.contains('on') === false && box.placeholder === 'このセッションへ');
+  page.dispatched({ token: [...page.pendingToasts.keys()].pop(), error: 'claude が起動しませんでした: boom' });
+  ok('★ 複製: one that did not start gives the words back with 複製 (and its worktree) on again — Enter would have sent them to the original session',
+    box.value === '複製して頼む' && fb.classList.contains('on') === true && fw.classList.contains('on') === true && fw.hidden === false && /元のセッションには送りません/.test(box.placeholder));
+  enter();
+  ok('★ 複製: Enter after that failure tries the copy again, and sends nothing to the original', runs().length === 2 && runs()[1].fork === card.id && replies() === 0);
+} catch (e) { ok('fork send — ' + e.stack.split('\n').slice(0, 3).join(' | '), false); }
+try {
+  // ここで始める / Ghostty で始める: what was chosen for the refused start goes with it
+  const page = runPage();
+  const cmd = page.startPaneCmd({ dir: '/Users/me/proj', text: "it's time", model: 'opus', mode: 'plan', effort: 'high', chrome: true, worktree: true, attachments: ['/Users/me/.rally/attachments/a.png'] });
+  ok('★ start in a pane: the model, effort, mode, Chrome, worktree and the attached files go into the command typed (mode, effort, Chrome and files were dropped)',
+    cmd === "claude --model opus --effort high --permission-mode plan --chrome --worktree -- $'it\\'s time\\n\\n添付ファイル(このパスを読んでください):\\n- /Users/me/.rally/attachments/a.png'");
+  ok('★ start in a pane: a mode or an effort the board does not offer starts nothing; neither does no text or no folder',
+    page.startPaneCmd({ dir: '/p', text: 'x', mode: 'bypassPermissions' }) === '' && page.startPaneCmd({ dir: '/p', text: 'x', effort: 'lots' }) === ''
+    && page.startPaneCmd({ dir: '/p', text: ' ' }) === '' && page.startPaneCmd({ dir: 'p', text: 'x' }) === '' && page.startPaneCmd({ dir: '/p', text: 'x' }) === "claude -- $'x'");
+  const src = uiScript();
+  ok('★ start in Ghostty: the request the page keeps for a start, and the one it posts, carry mode, effort, Chrome and attachments',
+    /pendingRuns\.set\(token,\{[^}]*mode:m\.mode\|\|'',effort:m\.effort\|\|'',chrome:!!m\.chrome,attachments:\(m\.attachments\|\|\[\]\)\.filter\(Boolean\),fork:m\.fork\|\|''\}\)/.test(src)
+    && /post\(\{type:'startterm',dir:req\.dir,text:req\.text,model:req\.model\|\|'',worktree:!!req\.worktree,mode:req\.mode\|\|'',effort:req\.effort\|\|'',chrome:!!req\.chrome,attachments:req\.attachments\|\|\[\]\}\)/.test(src));
+} catch (e) { ok('start in a terminal — ' + e.stack.split('\n').slice(0, 3).join(' | '), false); }
 console.log(`\n${pass} passed, ${fail} failed`);
 if (require.main === module) process.exit(fail ? 1 : 0);
 module.exports = { pass, fail };

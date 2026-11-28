@@ -72,7 +72,8 @@ function parseArgs(argv) {
     else if (a === '--no-open') o.noOpen = true;
     else if (a === '--type') o.typeInto = true;
     else if (a === '--when-free') o.whenFree = true;
-    else if (a === '--send-at') o.sendAt = +argv[++i];
+    // a time that is no time (NaN, 0) is said so below: left out, the message went at once instead of later
+    else if (a === '--send-at') { o.sendAt = +argv[++i]; o.sendAtGiven = true; }
     else if (a === '--ours') o.ours = true;
     else if (a === '--key') o.key = argv[++i];
     else if (a === '--now') o.now = true;
@@ -389,7 +390,7 @@ async function main() {
   }
   if (o.command === 'startterm') {
     // one shot for the app: start a new session in a Ghostty tab (where the CLI will start it)
-    try { return process.stdout.write(Text.json(require('../lib/term.js').startInTerminal({ dir: o.dirArg, text: o.text, model: o.model, agent: o.agentName || 'claude', worktree: !!o.worktree }))); }
+    try { return process.stdout.write(Text.json(require('../lib/term.js').startInTerminal({ dir: o.dirArg, text: o.text, model: o.model, agent: o.agentName || 'claude', worktree: !!o.worktree, mode: o.mode || undefined, effort: o.effort || undefined, chrome: !!o.chrome, attachments: (o.attach || []).filter(Boolean) }))); }
     catch (e) { return process.stdout.write(Text.json({ error: String(e && e.message || e) })); }
   }
   if (o.command === 'attachterm') {
@@ -603,24 +604,40 @@ async function main() {
     const Dispatch = require('../lib/dispatch.js');
     try {
       const files = (o.attach || []).filter(Boolean);
+      if (o.sendAtGiven && !(o.sendAt > 0)) throw new Error(tr('送る時刻が過ぎています。時刻を選び直してください'));
       const r = o.command === 'reply'
         ? Board.sendTo({ agent: o.agentName, id: o.session, text: o.text, model: o.model, effort: o.effort, attachments: files, dir: o.dirArg, type: !!o.typeInto, whenFree: !!o.whenFree, ours: !!o.ours, ...(o.sendAt ? { sendAt: o.sendAt } : {}) })
         : (() => { const Attach = require('../lib/attach.js');
-            const keep = files.map(Attach.inside).filter(Boolean);
-            return Dispatch.dispatch({ agent: o.agentName, text: String(o.text || '') + Attach.lines(keep), model: o.model, effort: o.effort, chrome: !!o.chrome, mode: o.mode || undefined, worktree: !!o.worktree, dir: o.dirArg, addDirs: keep.length ? [path.resolve(Attach.dir())] : undefined,
+            // what was attached is copied into the folder the session starts in (lib/attach.js forStart)
+            const at = Attach.forStart({ agent: o.agentName, cwd: o.dirArg, files, worktree: !!o.worktree && !o.fork });
+            if (at.error) throw new Error(at.error);
+            return Dispatch.dispatch({ agent: o.agentName, text: String(o.text || '') + at.lines, model: o.model, effort: o.effort, chrome: !!o.chrome, mode: o.mode || undefined, worktree: !!o.worktree, dir: o.dirArg, addDirs: at.addDirs,
               ...(o.fork ? { session: Dispatch.recordId('claude', o.fork), fork: true, model: undefined } : {}) }); })();
       // a start the CLI refused is not a start (sendTo reads its own reply's log)
-      if (o.command === 'run') { const got = Dispatch.outcome(r.log, o.agentName === 'codex' ? 1200 : 6000, r.pid); if (got && got.refused) r.error = tr('{agent} が起動しませんでした: {why}', { agent: o.agentName, why: got.refused }); if (got && got.conversation) r.conversation = got.conversation; }
+      // codex 聞く starts an app server first and says when the turn is under way: waited for, or a refusal would read as started
+      if (o.command === 'run') { const got = Dispatch.outcome(r.log, r.ask ? 20000 : o.agentName === 'codex' ? 1200 : 6000, r.pid, { bg: !!r.bg }); if (got && got.refused) r.error = tr('{agent} が起動しませんでした: {why}', { agent: o.agentName, why: Dispatch.reason(o.agentName, got) }); if (got && got.conversation) r.conversation = got.conversation; }
+      // codex and agy do not say that they started: one that is already over with an error did not (lib/dispatch.js ended)
+      if (o.command === 'run' && !r.error && !r.bg && !r.conversation && r.exit) {
+        const end = await Dispatch.ended(r);
+        if (end && (end.code || end.signal)) r.error = tr('{agent} がエラーで終了しました(終了コード {code}): {why}', { agent: o.agentName, code: end.signal || end.code, why: Dispatch.reason(o.agentName, { refused: Dispatch.complaint(r.log), unlisted: true }) });
+      }
       // exit 0: the app passes a JSON answer through only then, and the page needs saved / attach
       if (r.error) return process.stdout.write(Text.json({ error: r.error, ...(r.typeable ? { typeable: true } : {}), ...(r.saved ? { saved: true, attach: String(o.session || '').slice(0, 8) } : {}), ...(r.queued ? { queued: true, why: r.why } : {}), log: r.log }));
       const started = o.command === 'run' ? await nameStartedSession(r, o) : null;
       const named = started && started.id;
+      // no id after all that waiting: a refusal that came later than the first look is read now (the process has ended)
+      if (o.command === 'run' && r.bg && !started) {
+        const late = Dispatch.outcome(r.log, 400, r.pid, { bg: true });
+        if (late && late.refused) return process.stdout.write(Text.json({ error: tr('{agent} が起動しませんでした: {why}', { agent: o.agentName, why: Dispatch.reason(o.agentName, late) }), log: r.log }));
+      }
       // --fork: the fork remembers where it was cut from (its transcript does not)
       if (named && o.fork) require('../lib/forks.js').set(named, o.fork);
       return process.stdout.write(Text.json({ ok: true, pid: r.pid, log: r.log, argv: r.argv,
         ...(r.queued ? { queued: true, why: r.why, ...(r.to ? { to: r.to } : {}), ...(r.sendAt ? { sendAt: r.sendAt, key: r.key } : {}) } : {}), ...(r.woke ? { woke: true } : {}),
         ...(r.relayed ? { relayed: true, to: r.to, ...(r.pending ? { pending: true } : {}) } : {}), ...(r.typed ? { typed: true, to: r.to } : {}),
-        ...(named ? { session: named } : {}), ...(started && started.short ? { short: started.short, agent: o.agentName } : {}) }));
+        ...(named ? { session: named } : {}), ...(started && started.short ? { short: started.short, agent: o.agentName } : {}),
+        // claude --bg is still at it and has not said `backgrounded`: asked, not known to have started
+        ...(o.command === 'run' && r.bg && !started && !Dispatch.saidStarted(r.log) ? { unconfirmed: true } : {}) }));
     } catch (e) { process.stdout.write(Text.json({ error: String(e && e.message || e) })); process.exitCode = 1; return; }
   }
   if (o.command !== 'serve') { console.error(L(`unknown command "${o.command}"`, `不明なコマンド "${o.command}"`)); console.log(HELP); process.exit(2); }
