@@ -5458,6 +5458,10 @@ exec sleep 30
         const st = Clicheck.forState(['claude', 'antigravity'], { bins: { claude: v2 } });
         ok('★ clicheck: the board\'s state names the agent, its version and the flags; an agent it builds no commands for is not looked at',
           JSON.stringify(st) === JSON.stringify({ claude: { version: '2.2.0', missing: ['--bg', '--fork-session'] } }) && Clicheck.check('antigravity', { bin: v1 }) === null);
+        ok('★ clicheck: only the agents in its list are looked at — a name that is a property of every object (constructor, __proto__, toString) is no agent, and nothing is run or remembered for it',
+          JSON.stringify([...Clicheck.CHECKED].sort()) === JSON.stringify(['claude', 'codex']) && ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'antigravity', '', undefined, 7].every((a) => Clicheck.check(a, { bin: v1 }) === null && Clicheck.note(a, { bin: v1, unexpected: true }) === '' && Clicheck.flagsOf(a).length === 0)
+          && Object.keys(Clicheck.forState(['constructor', '__proto__'], { bins: { constructor: v2, __proto__: v2 } })).length === 0
+          && !Object.keys(JSON.parse(fs.readFileSync(process.env.RALLY_CLICHECK_FILE, 'utf8'))).some((k) => k !== 'claude'));
         const v3 = fakeCli('claude-v3', '2.3.0', all);
         Clicheck.check('claude', { bin: v3, now: 5000 });
         const wrap = sh('claude-wrapper', ['echo "starting the real one"', 'exit 0']);
