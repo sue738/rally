@@ -34,7 +34,7 @@ Usage:
   ${NAME} wtsetup --cwd DIR [--include a,b | --setup CMD]   what a new worktree would lack (.env …), add to .worktreeinclude, keep a setup command
   ${NAME} perm [--shim | --id ID --answer allow|rule|always|automode|deny|pass|answer [--text T] [--answers JSON]]   permission prompts held for the board (lib/permhook.js), or answer one with the terminal's choices (rule: allow and save --text as a Bash rule; always: allow and save what Claude Code offered; automode: allow and switch the session to auto mode; deny: --text is what to tell Claude; answer: a question, with {"question text":"choice"})
   ${NAME} takeover --session ID   close another terminal's idle claude of this session (SIGTERM, never SIGKILL) and wait until it is gone (${tr('ここで開き直す')})
-  ${NAME} run --as claude|codex --text "…" [--cwd DIR] [--chrome] [--mode plan|acceptEdits]  start an agent headless (--chrome: let it drive Chrome)
+  ${NAME} run --as claude|codex --text "…" [--cwd DIR] [--chrome] [--mode plan|acceptEdits|auto|ask]  start an agent headless (--chrome: let it drive Chrome; ask: codex only, its approval prompts are held for the board)
   ${NAME} reply --as claude|codex --session ID --text "…" [--when-free]  continue a session headless (what send does; --when-free: ${tr('今の作業後に送る')}, held while it is at work)
   ${NAME} queue --as claude --session ID [--text "…" | --cancel [--key K] | --now --key K]  hold a message, take it back, or send one held message now
   ${NAME} wip                  what is still open in the sessions that were read (the ${tr('残作業')} view)

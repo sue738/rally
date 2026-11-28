@@ -5170,6 +5170,138 @@ exec sleep 30
       } catch (e) { ok('model aliases — ' + e.message, false); }
       finally { process.env.RALLY_BIN_CLAUDE = pb; scratchStore('MODEL_ALIASES'); fs.rmSync(d, { recursive: true, force: true }); }
     }
+    // codex 聞く (lib/codexask.js): a turn run under codex's app server leaves its approval prompts for the board
+    {
+      const CA = require('../lib/codexask.js'), Perm = require('../lib/perm.js'), Dispatch = require('../lib/dispatch.js'), St = require('../lib/board/state.js');
+      const TID = '0199aaaa-bbbb-7ccc-8ddd-eeeeeeeeeeee';
+      const d = fs.mkdtempSync(path.join(tmp, 'codexask-'));
+      const pb = process.env.RALLY_BIN_CODEX;
+      // a stand-in for `codex app-server`: one JSON-RPC message per line, one command that asks, a turn that ends
+      function fakeCodexAppServer() {
+        const fs = require('fs');
+        const log = process.env.FAKE_CODEX_LOG, TID = process.env.FAKE_CODEX_TID;
+        const out = (m) => process.stdout.write(JSON.stringify(m) + '\n');
+        const item = (status, exitCode) => ({ id: 'i1', type: 'commandExecution', command: 'git push origin main', status, exitCode });
+        const endTurn = () => {
+          out({ method: 'item/completed', params: { threadId: TID, turnId: 'turn-1', item: { id: 'i2', type: 'agentMessage', text: 'DONE' } } });
+          out({ method: 'turn/completed', params: { threadId: TID, turn: { id: 'turn-1', status: 'completed' } } });
+        };
+        let buf = '';
+        process.stdin.on('data', (d) => {
+          buf += d;
+          for (let i; (i = buf.indexOf('\n')) >= 0;) {
+            const line = buf.slice(0, i); buf = buf.slice(i + 1);
+            if (!line.trim()) continue;
+            const m = JSON.parse(line);
+            fs.appendFileSync(log, JSON.stringify(m) + '\n');
+            if (m.method === 'initialize') out({ id: m.id, result: { userAgent: 'fake' } });
+            else if (m.method === 'thread/start') out({ id: m.id, result: { thread: { id: TID } } });
+            else if (m.method === 'thread/resume') {
+              if (process.env.FAKE_CODEX_BUSY) out({ id: m.id, error: { code: -32000, message: `thread ${m.params.threadId} already has an active writer` } });
+              else out({ id: m.id, result: { thread: { id: m.params.threadId } } });
+            } else if (m.method === 'turn/start') {
+              out({ id: m.id, result: { turn: { id: 'turn-1' } } });
+              out({ method: 'item/started', params: { threadId: TID, turnId: 'turn-1', item: item('inProgress', null) } });
+              out({ id: 900, method: 'item/commandExecution/requestApproval', params: { threadId: TID, turnId: 'turn-1', itemId: 'i1', startedAtMs: 1, command: 'git push origin main', cwd: process.cwd(), reason: 'publish the branch' } });
+            } else if (m.method === 'turn/steer') { out({ id: m.id, result: {} }); endTurn(); }
+            else if (m.id === 900 && m.result) {
+              const yes = m.result.decision === 'accept';
+              out({ method: 'item/completed', params: { threadId: TID, turnId: 'turn-1', item: item(yes ? 'completed' : 'declined', yes ? 0 : null) } });
+              // a decline waits for what the person says with it (turn/steer); an accept ends the turn
+              if (yes) endTurn();
+            }
+          }
+        });
+      }
+      try {
+        // what buildCommand hands `codex exec`, read back
+        const a1 = CA.parseArgs(['exec', '-C', '/p', '-c', 'model_reasoning_effort="high"', '--skip-git-repo-check', '-m', 'gpt-x', '--', 'do it']);
+        const a2 = CA.parseArgs(['exec', '-C', '/p', 'resume', '--skip-git-repo-check', TID, '--', 'more']);
+        let bad = ''; try { CA.parseArgs(['exec', '--enable', 'worktrees', '--worktree', '--', 'x']); } catch (e) { bad = e.message; }
+        ok('★ codex ask: the runner reads the argv dispatch builds for codex exec (a start and a resume), and refuses what the app server has no word for',
+          a1.dir === '/p' && a1.effort === 'high' && a1.model === 'gpt-x' && a1.text === 'do it' && !a1.resume
+          && a2.resume && a2.session === TID && a2.text === 'more' && /not supported with ask/.test(bad));
+        const items = new Map([['i1', { id: 'i1', type: 'fileChange', changes: [{ path: '/p/a.txt', diff: '+hi\n' }] }]]);
+        const CMD = 'item/commandExecution/requestApproval', ASKQ = 'item/tool/requestUserInput', PERMS = 'item/permissions/requestApproval';
+        const rc = CA.requestOf(CMD, { command: "/bin/bash -lc 'git push'", cwd: '/p', reason: 'push it' }, TID, items);
+        const rn = CA.requestOf(CMD, { networkApprovalContext: { host: 'example.com', protocol: 'https' }, cwd: '/p' }, TID, items);
+        const rf = CA.requestOf('item/fileChange/requestApproval', { itemId: 'i1', reason: 'outside the folder' }, TID, items);
+        const rq = CA.requestOf(ASKQ, { questions: [{ id: 'q1', header: 'H', question: 'Which?', options: [{ label: 'A', description: 'a' }, { label: 'B', description: 'b' }] }] }, TID, items);
+        ok('★ codex ask: a command, a network request, a patch (its files and diff) and a question become requests the store takes; a secret question and an unknown request do not',
+          rc.session_id === TID && rc.tool_name === 'Bash' && rc.tool_input.command === "/bin/bash -lc 'git push'" && rc.tool_input.description === 'push it'
+          && /example\.com/.test(rn.tool_input.command)
+          && rf.tool_name === 'ApplyPatch' && /\/p\/a\.txt\n\+hi/.test(Perm.whatOf(rf.tool_name, rf.tool_input))
+          && rq.tool_name === 'AskUserQuestion' && Perm.questionsOf(rq.tool_name, rq.tool_input).length === 1
+          && CA.requestOf(ASKQ, { questions: [{ id: 'q1', header: 'H', question: 'Password?', isSecret: true }] }, TID, items) === null
+          && CA.requestOf('mcpServer/elicitation/request', {}, TID, items) === null);
+        ok('★ codex ask: はい is accept and いいえ is decline (the turn goes on), a pass is no decision; a question is answered by its id, extra permissions are granted for the turn or not at all',
+          CA.resultOf(CMD, {}, 'allow').decision === 'accept' && CA.resultOf(CMD, {}, 'deny').decision === 'decline' && CA.resultOf(CMD, {}, 'pass') === null
+          && CA.resultOf('item/fileChange/requestApproval', {}, 'allow').decision === 'accept'
+          && JSON.stringify(CA.resultOf(ASKQ, { questions: [{ id: 'q1', question: 'Which?' }] }, 'answer', { 'Which?': 'A' })) === '{"answers":{"q1":{"answers":["A"]}}}'
+          && JSON.stringify(CA.resultOf(ASKQ, { questions: [{ id: 'q1', question: 'Which?' }] }, 'deny')) === '{"answers":{}}' && CA.resultOf(ASKQ, { questions: [{ id: 'q1', question: 'Which?' }] }, 'pass') === null
+          && JSON.stringify(CA.resultOf(PERMS, { permissions: { network: { enabled: true } } }, 'allow')) === '{"permissions":{"network":{"enabled":true}},"scope":"turn"}'
+          && JSON.stringify(CA.resultOf(PERMS, { permissions: { network: { enabled: true } } }, 'deny')) === '{"permissions":{},"scope":"turn"}');
+        // the store and the board
+        const p0 = Perm.put(rc, process.pid, { bg: true, cli: 'codex' });
+        const got = Perm.list().find((x) => x.id === p0);
+        const cards = [{ agent: 'claude', id: TID }, { agent: 'codex', id: TID, lastWorkT: Date.now() + 600000 }];
+        const passed = [];
+        St.placeAsks(cards, [got], Date.now(), (id) => passed.push(id));
+        ok('★ codex ask: its prompt is kept with はい / いいえ only, lands on the codex card (not a claude one of the same id), and is neither let go as stale nor judged answered elsewhere while the app server waits',
+          !!got && got.cli === 'codex' && got.bg === true && JSON.stringify(got.choices) === '[{"d":"allow"},{"d":"deny"}]' && got.why === 'push it'
+          && !cards[0].permAsk && !!cards[1].permAsk && cards[1].permAsk.cli === 'codex' && cards[1].column === 'approval' && !passed.length
+          && Perm.sessionFor(got, new Map([['codex\0' + TID, { id: 'x' }], ['claude\0' + TID, { id: 'y' }]])) === null && Perm.answer(p0, 'automode') === false);
+        Perm.clear(p0);
+        const bc = Dispatch.buildCommand({ agent: 'codex', text: 'x', dir: '/p', mode: 'ask' });
+        let wt = ''; try { Dispatch.buildCommand({ agent: 'codex', text: 'x', dir: '/p', mode: 'ask', worktree: true }); } catch (e) { wt = e.message; }
+        ok('★ codex ask: the start carries no sandbox flag of exec\'s (the runner sets its own), and is refused together with a worktree',
+          bc.args.join(' ') === 'exec -C /p --skip-git-repo-check -- x' && /worktree/.test(wt));
+        // the whole run, against the stand-in
+        const fake = path.join(d, 'codex'), flog = path.join(d, 'fake.jsonl'), proj = path.join(d, 'proj');
+        fs.mkdirSync(proj);
+        fs.writeFileSync(fake, `#!${process.execPath}\n(${fakeCodexAppServer.toString()})();\n`, { mode: 0o755 });
+        process.env.RALLY_BIN_CODEX = fake; process.env.RALLY_CODEX_ASKED = path.join(d, 'asked.json');
+        process.env.FAKE_CODEX_LOG = flog; process.env.FAKE_CODEX_TID = TID; process.env.RALLY_OUTCOME_MS = '15000';
+        const until = (f, ms = 15000) => { const end = Date.now() + ms; for (;;) { let v; try { v = f(); } catch (e) { v = null; } if (v || Date.now() > end) return v; Dispatch.sleepMs(50); } };
+        const seen = () => { try { return fs.readFileSync(flog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch (e) { return []; } };
+        const held = () => Perm.list().find((x) => x.cli === 'codex' && x.session === TID);
+        const r1 = Dispatch.dispatch({ agent: 'codex', text: 'push it', dir: proj, mode: 'ask' });
+        const ask1 = until(held);
+        ok('★ codex ask: a start with 聞く runs the turn under the app server (on-request, workspace-write) and its prompt is held for the board',
+          r1.ask === true && r1.argv[0] === process.execPath && /codexask\.js$/.test(r1.argv[1]) && r1.argv[2] === fake
+          && !!ask1 && ask1.tool === 'Bash' && ask1.what === 'git push origin main' && ask1.why === 'publish the branch'
+          && seen().some((m) => m.method === 'thread/start' && m.params.approvalPolicy === 'on-request' && m.params.sandbox === 'workspace-write' && m.params.cwd === proj));
+        if (ask1) Perm.answer(ask1.id, 'allow');
+        until(() => /^DONE$/m.test(fs.readFileSync(r1.log, 'utf8')));
+        until(() => !held());
+        const log1 = fs.readFileSync(r1.log, 'utf8');
+        ok('★ codex ask: はい on the card is accept for codex, the turn ends, the request is gone, and the thread is remembered as one that asks',
+          seen().some((m) => m.id === 900 && m.result && m.result.decision === 'accept') && /^DONE$/m.test(log1)
+          && (log1.split('\n')[1] || '').startsWith(`rally: codex thread ${TID} turn started`) && CA.known(TID) && !held()
+          && / -C \S+/.test(log1.split('\n')[0]));
+        fs.writeFileSync(flog, '');
+        const r2 = Dispatch.resume({ agent: 'codex', id: TID, text: 'again', dir: proj });
+        const ask2 = until(held);
+        if (ask2) Perm.answer(ask2.id, 'deny', 'not today');
+        until(() => seen().some((m) => m.method === 'turn/steer'));
+        ok('★ codex ask: a later message to that thread goes through the app server too (thread/resume) and reads as sent; いいえ with words is decline, and the words reach the turn',
+          r2.sent === true && /codexask\.js$/.test(r2.argv[1]) && seen().some((m) => m.method === 'thread/resume' && m.params.threadId === TID && m.params.approvalPolicy === 'on-request')
+          && seen().some((m) => m.id === 900 && m.result && m.result.decision === 'decline')
+          && seen().some((m) => m.method === 'turn/steer' && m.params.input[0].text === 'not today' && m.params.expectedTurnId === 'turn-1'));
+        until(() => /^DONE$/m.test(fs.readFileSync(r2.log, 'utf8')));
+        process.env.FAKE_CODEX_BUSY = '1';
+        const r3 = Dispatch.resume({ agent: 'codex', id: TID, text: 'once more', dir: proj });
+        ok('★ codex ask: a thread open in another codex is a refusal said as codex exec\'s is, not a message reported sent and lost',
+          !r3.sent && /別の codex/.test(r3.refused || ''));
+        const r4 = Dispatch.dispatch({ agent: 'codex', text: 'plain', dir: proj, session: '0199aaaa-bbbb-7ccc-8ddd-ffffffffffff' });
+        ok('★ codex ask: a thread not started with 聞く is answered through codex exec, as before', !r4.ask && r4.argv[0] === fake && r4.argv[1] === 'exec');
+      } catch (e) { ok('codex ask — ' + (e.stack || e.message), false); }
+      finally {
+        if (pb === undefined) delete process.env.RALLY_BIN_CODEX; else process.env.RALLY_BIN_CODEX = pb;
+        process.env.RALLY_OUTCOME_MS = '1500';
+        for (const k of ['FAKE_CODEX_LOG', 'FAKE_CODEX_TID', 'FAKE_CODEX_BUSY']) delete process.env[k];
+      }
+    }
     // the page's own script, executed rather than parsed (test/page.js)
 {
   const r = require('./page.js');

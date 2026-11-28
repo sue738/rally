@@ -103,6 +103,9 @@ a bill (`$?` when a model has no known rate; none for Codex).
   the window, without taking focus, with the prompt's own choices (allow / don't ask
   again / deny). The same prompt shows in the open session's conversation, where ⌘Y /
   ⌘⇧Y allow or deny it. Questions (AskUserQuestion) and plan approvals work the same way.
+  A Codex session started with **Ask** asks the same way: what its sandbox would refuse (a write
+  outside the folder, the network) comes to the card as Yes / No, and what you type with a No is
+  handed to the turn.
 - **Send a message.** Enter in the panel's box sends it to that session: an idle one is
   resumed in place, a background one is continued, one open in a terminal is typed into.
   A chip in the send row changes that:
@@ -122,7 +125,8 @@ a bill (`$?` when a model has no known rate; none for Codex).
   The strip at the bottom holds shells and splits (⌘J shows it, ⌘T opens a shell, ⌘D splits).
 - **Start a new session** with **＋ New** (⌘N): pick an agent (claude, codex,
   antigravity), a folder, a model, and a permission mode (plan / accept edits / auto;
-  bypass is never offered). Claude and Codex can start in a fresh git worktree, and
+  bypass is never offered; Codex also has **Ask**, which runs the turn under `codex app-server`
+  so its approval prompts reach the board, and cannot be combined with a worktree). Claude and Codex can start in a fresh git worktree, and
   ×2 / ×3 run the same ask side by side in separate worktrees; Claude can also be
   allowed to drive Chrome (`--chrome`). Files and pasted images can go with the message.
 - **Follow subagents.** Subagents are nested under their parent: running ones, then the
@@ -139,7 +143,7 @@ a bill (`$?` when a model has no known rate; none for Codex).
 | agent | listed | conversation | send / start | answer prompts | panel terminal |
 |---|---|---|---|---|---|
 | Claude Code | yes | yes | yes | yes (hook above) | `claude attach` / resume |
-| Codex CLI | yes | yes | yes (`codex exec`) | no (runs headless in a sandbox mode) | `codex resume` |
+| Codex CLI | yes | yes | yes (`codex exec`) | sessions started with **Ask** (`codex app-server`); the other modes run headless in a sandbox and cannot ask | `codex resume` |
 | Antigravity (`agy`) | sessions Rally started | yes | yes (`agy -p`) | no (denied actions are named on the card) | `agy --conversation` |
 | Gemini CLI | yes | no | no | no | no |
 | Cursor | yes | no | no | no | no |

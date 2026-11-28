@@ -336,6 +336,12 @@ if (api) {
         && /data-o="1">Blue</.test(qh) && /class="aother"/.test(qh) && /askpass/.test(qh) && !/askyes|askno/.test(qh) && !/ダイアログが開いたまま/.test(qh));
       ok('question: one question with one answer goes on the pick (no 答える button); several need 答える', !/askq-send/.test(qh)
         && /askq-send/.test(api.askHtml({ ...qc, permAsk: { ...qc.permAsk, id: 'd'.repeat(32), questions: [qs[0], { ...qs[0], question: 'Which size?' }] } })));
+      // a Codex turn the board runs (聞く): the same boxes, with no terminal to hand the prompt back to
+      const cx = api.askHtml({ ...card, agent: 'codex', column: 'approval', permAsk: { id: 'f'.repeat(32), tool: 'Bash', what: 'git push', t: Date.now(), bg: true, cli: 'codex', choices: [{ d: 'allow' }, { d: 'deny' }] } });
+      const cq = api.askHtml({ ...qc, agent: 'codex', permAsk: { ...qc.permAsk, id: '9'.repeat(32), cli: 'codex' } });
+      ok('★ codex ask: its held prompt and its question are answered on the board only (はい / いいえ or the options; no 端末で答える)',
+        /class="askbox held" data-perm="f{32}"/.test(cx) && /git push/.test(cx) && /askyes/.test(cx) && /askno/.test(cx) && !/askpass/.test(cx)
+        && /class="askbox held askq" data-perm="9{32}"/.test(cq) && /class="aother"/.test(cq) && !/askpass/.test(cq) && /askpass/.test(qh));
       const pk = api.qPick(qc.permAsk);
       ok('question: nothing picked is no answer', api.qAnswers(qc.permAsk) === null);
       pk.sel[0] = new Set([1]);
